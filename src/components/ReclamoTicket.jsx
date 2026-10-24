@@ -31,7 +31,9 @@ export default function ReclamoTicket({ reclamo, onOpen, tag }) {
       </div>
       <div className="ticket__body">
         <div className="ticket__head">
-          <span className="ticket__id">{reclamo.id}</span>
+          <span className="ticket__id">
+            {reclamo.id} {reclamo.editado && <span className="badge-editado">EDITADO</span>}
+          </span>
           <Stamp tone={tono} rotate={reclamo.id.length % 2 ? "l" : "r"}>
             {reclamo.estado}
           </Stamp>

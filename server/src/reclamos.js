@@ -1,6 +1,6 @@
 // Reclamos persistidos: cada conversación del chat es un reclamo del vecino (borrador hasta presentarlo).
 // TODA consulta filtra por user_id de la sesión: un usuario nunca ve ni toca reclamos ajenos.
-import { q } from "./db.js";
+import { pool, q } from "./db.js";
 import { HttpError } from "./auth.js";
 
 export const nro = (r) => `RE-${new Date(r.created_at).getFullYear()}-${String(r.id).padStart(4, "0")}`;
@@ -48,6 +48,9 @@ export function ticket(r) {
     resumen: d.resumen || String(r.memoria || "").split("\n")[0].replace(/^[-•*]\s*/, "").slice(0, 160),
     fundamento: r.fundamento || "",
     actualizado: r.updated_at,
+    editado: Boolean(r.editado_at),
+    editadoAt: r.editado_at || null,
+    fechaHecho: d.fecha || "",
   };
 }
 
@@ -120,7 +123,7 @@ export async function listar(user) {
   const rows = (
     await q(
       `SELECT r.* FROM reclamos r
-        WHERE r.user_id = $1 AND (r.estado <> 'borrador' OR EXISTS (SELECT 1 FROM reclamo_mensajes m WHERE m.reclamo_id = r.id))
+        WHERE r.user_id = $1 AND r.estado <> 'baja' AND (r.estado <> 'borrador' OR EXISTS (SELECT 1 FROM reclamo_mensajes m WHERE m.reclamo_id = r.id))
         ORDER BY r.updated_at DESC LIMIT 200`,
       [user.id],
     )
@@ -227,4 +230,110 @@ export async function demoVecino() {
     )
   ).rows;
   return { reclamos: rows.map((r) => ({ ...ticket(r), demo: true })), vecina: "Mirta, 72 años" };
+}
+
+// ─── Baja y edición (sólo el dueño; todo queda auditado en reclamo_versiones) ───
+
+const CONTROL = /[\u0000-\u0008\u000B\u000C\u000E-\u001F\u007F]/g;
+const texto = (v, n) => String(v ?? "").replace(CONTROL, "").trim().slice(0, n);
+// Campos que el vecino puede completar o corregir, con su validación.
+const EDITABLES = {
+  entidad: (v) => { const t = texto(v, 120); if (t.length < 2) throw new HttpError(400, "dato_invalido", "Poné el nombre del banco, tarjeta o billetera."); return t; },
+  monto: (v) => { const t = texto(v, 40); if (t && !/^\$?\s*[\d.,]+$/.test(t)) throw new HttpError(400, "dato_invalido", "El monto tiene que ser un número (por ejemplo 12.500)."); return t; },
+  fecha: (v) => { const t = texto(v, 40); if (t && !/^[\p{L}\d\s/.,-]+$/u.test(t)) throw new HttpError(400, "dato_invalido", "Revisá la fecha."); return t; },
+  operacion: (v) => { const t = texto(v, 60); if (t && !/^[\p{L}\d\s#/._-]+$/u.test(t)) throw new HttpError(400, "dato_invalido", "El número de operación tiene caracteres raros."); return t; },
+  resumen: (v) => texto(v, 400),
+};
+const ETIQUETA = { entidad: "Entidad", monto: "Monto", fecha: "Fecha", operacion: "N° de operación", resumen: "Resumen", estado: "Estado" };
+
+async function versionar(c, r, user, accion, cambios) {
+  const snapshot = { estado: r.estado, datos: r.datos, fundamento: r.fundamento };
+  await c.query(
+    `INSERT INTO reclamo_versiones (reclamo_id, version, accion, snapshot, cambios, user_id, user_role)
+     VALUES ($1, (SELECT COALESCE(MAX(version), 0) + 1 FROM reclamo_versiones WHERE reclamo_id = $1), $2, $3, $4, $5, $6)`,
+    [r.id, accion, snapshot, JSON.stringify(cambios), user.id, user.role],
+  );
+}
+
+async function enTransaccion(fn) {
+  const c = await pool.connect();
+  try {
+    await c.query("BEGIN");
+    const out = await fn(c);
+    await c.query("COMMIT");
+    return out;
+  } catch (e) {
+    await c.query("ROLLBACK").catch(() => {});
+    throw e;
+  } finally {
+    c.release();
+  }
+}
+
+// POST /api/reclamos/baja {id, motivo?} → baja lógica: desaparece de Mis reclamos y de la bandeja; la fila queda.
+export async function baja(user, body) {
+  const id = Number(body?.id);
+  if (!Number.isInteger(id)) throw new HttpError(400, "dato_invalido", "Falta el reclamo.");
+  const motivo = texto(body?.motivo, 300);
+  return enTransaccion(async (c) => {
+    const r = (await c.query("SELECT * FROM reclamos WHERE id = $1 AND user_id = $2 AND NOT demo FOR UPDATE", [id, user.id])).rows[0];
+    if (!r) throw new HttpError(404, "reclamo_no_encontrado", "No encontré ese reclamo.");
+    if (r.estado === "baja") return { ok: true };
+    await versionar(c, r, user, "baja", [{ campo: "estado", antes: r.estado, despues: "baja" }]);
+    await c.query(
+      "UPDATE reclamos SET estado_previo = estado, estado = 'baja', activa = false, baja_at = now(), baja_motivo = $3, updated_at = now() WHERE id = $1 AND user_id = $2",
+      [id, user.id, motivo || null],
+    );
+    return { ok: true };
+  });
+}
+
+// POST /api/reclamos/editar {id, datos:{entidad,monto,fecha,operacion,resumen}} → guarda la versión anterior y actualiza.
+export async function editar(user, body) {
+  const id = Number(body?.id);
+  if (!Number.isInteger(id)) throw new HttpError(400, "dato_invalido", "Falta el reclamo.");
+  const nuevos = body?.datos && typeof body.datos === "object" ? body.datos : {};
+  return enTransaccion(async (c) => {
+    const r = (await c.query("SELECT * FROM reclamos WHERE id = $1 AND user_id = $2 AND NOT demo FOR UPDATE", [id, user.id])).rows[0];
+    if (!r) throw new HttpError(404, "reclamo_no_encontrado", "No encontré ese reclamo.");
+    if (r.estado === "baja") throw new HttpError(409, "reclamo_de_baja", "Ese reclamo está dado de baja.");
+    const datos = { ...(r.datos || {}) };
+    const cambios = [];
+    for (const [campo, validar] of Object.entries(EDITABLES)) {
+      if (!(campo in nuevos)) continue;
+      const v = validar(nuevos[campo]);
+      const antes = String(datos[campo] ?? "");
+      if (v !== antes) {
+        cambios.push({ campo, antes, despues: v });
+        datos[campo] = v;
+      }
+    }
+    if (!cambios.length) return { reclamo: ticket(r), cambios: 0 };
+    await versionar(c, r, user, "edicion", cambios);
+    const u = (
+      await c.query("UPDATE reclamos SET datos = $3, editado_at = now(), updated_at = now() WHERE id = $1 AND user_id = $2 RETURNING *", [id, user.id, datos])
+    ).rows[0];
+    return { reclamo: ticket(u), cambios: cambios.length };
+  });
+}
+
+// GET /api/reclamos/historial?id= → versiones. Dueño (vecino) o la Oficina para reclamos visibles en su bandeja.
+export async function historial(user, idParam) {
+  const id = Number(idParam);
+  if (!Number.isInteger(id)) throw new HttpError(400, "dato_invalido", "Falta el reclamo.");
+  const r =
+    user.role === "entidad"
+      ? (await q("SELECT * FROM reclamos WHERE id = $1 AND estado NOT IN ('borrador', 'baja') AND (demo OR $2)", [id, oficinaHabilitada(user)])).rows[0]
+      : (await q("SELECT * FROM reclamos WHERE id = $1 AND user_id = $2", [id, user.id])).rows[0];
+  if (!r) throw new HttpError(404, "reclamo_no_encontrado", "No encontré ese reclamo.");
+  const vs = (await q("SELECT version, accion, cambios, user_role, created_at FROM reclamo_versiones WHERE reclamo_id = $1 ORDER BY version DESC", [id])).rows;
+  return {
+    versiones: vs.map((v) => ({
+      version: v.version,
+      accion: v.accion,
+      por: v.user_role === "entidad" ? "Oficina" : "Vecino/a",
+      at: v.created_at,
+      cambios: (v.cambios || []).map((x) => ({ campo: ETIQUETA[x.campo] || x.campo, antes: String(x.antes ?? ""), despues: String(x.despues ?? "") })),
+    })),
+  };
 }

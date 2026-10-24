@@ -1,7 +1,8 @@
 import Doc from "../components/Doc.jsx";
 import Icon from "../components/Icon.jsx";
+import GestionReclamo from "../components/GestionReclamo.jsx";
 
-export default function Seguimiento({ reclamo, contenido, onVolver, onNuevo }) {
+export default function Seguimiento({ reclamo, contenido, onVolver, onNuevo, onCambio, onBaja, soloLectura }) {
   const vencido = reclamo.vencido || reclamo.estado === "VENCIDO" || reclamo.estado === "ESCALADO AL BCRA";
   const escalado = reclamo.estado === "ESCALADO AL BCRA";
   const total = contenido.plazo.total;
@@ -75,6 +76,8 @@ export default function Seguimiento({ reclamo, contenido, onVolver, onNuevo }) {
           );
         })}
       </div>
+
+      {!soloLectura && <GestionReclamo reclamo={reclamo} onCambio={onCambio} onBaja={onBaja} />}
 
       <div className="doc__seccion">DOCUMENTO</div>
       <Doc reclamo={reclamo} contenido={contenido} />

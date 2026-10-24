@@ -103,6 +103,24 @@ ALTER TABLE reclamos ADD COLUMN IF NOT EXISTS demo BOOLEAN NOT NULL DEFAULT fals
 ALTER TABLE reclamos DROP CONSTRAINT IF EXISTS reclamos_estado_check;
 ALTER TABLE reclamos ADD CONSTRAINT reclamos_estado_check
   CHECK (estado IN ('borrador', 'recibido', 'en_tramite', 'respondido', 'escalado', 'resuelto', 'baja'));
+
+-- v6: baja lógica (la fila se conserva) y edición con historial de versiones.
+ALTER TABLE reclamos ADD COLUMN IF NOT EXISTS estado_previo TEXT;
+ALTER TABLE reclamos ADD COLUMN IF NOT EXISTS baja_at TIMESTAMPTZ;
+ALTER TABLE reclamos ADD COLUMN IF NOT EXISTS baja_motivo TEXT;
+ALTER TABLE reclamos ADD COLUMN IF NOT EXISTS editado_at TIMESTAMPTZ;
+CREATE TABLE IF NOT EXISTS reclamo_versiones (
+  id          BIGSERIAL PRIMARY KEY,
+  reclamo_id  BIGINT NOT NULL REFERENCES reclamos(id) ON DELETE CASCADE,
+  version     INT NOT NULL,
+  accion      TEXT NOT NULL CHECK (accion IN ('edicion', 'baja')),
+  snapshot    JSONB NOT NULL,            -- cómo estaba el reclamo ANTES del cambio
+  cambios     JSONB NOT NULL DEFAULT '[]', -- [{campo, antes, despues}]
+  user_id     BIGINT REFERENCES users(id) ON DELETE SET NULL,
+  user_role   TEXT NOT NULL,
+  created_at  TIMESTAMPTZ NOT NULL DEFAULT now(),
+  UNIQUE (reclamo_id, version)
+);
 `;
 
 export async function migrate() {

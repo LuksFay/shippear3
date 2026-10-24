@@ -2,6 +2,7 @@ import { useState } from "react";
 import Stamp from "../components/Stamp.jsx";
 import Barcode from "../components/Barcode.jsx";
 import Icon from "../components/Icon.jsx";
+import Historial from "../components/Historial.jsx";
 
 function fechaCorta(iso) {
   return new Date(iso).toLocaleDateString("es-AR", {
@@ -48,8 +49,9 @@ export default function CasoDetalle({ caso, contenido, reglas, onVolver, onPatro
       </button>
 
       <span className="view__kicker" style={{ marginTop: "1rem" }}>
-        CASO {caso.id}
+        CASO {caso.id} {caso.editado && <span className="badge-editado">EDITADO</span>}
       </span>
+      {caso.editado && !caso.demo && <Historial key={caso.editadoAt} dbId={caso.dbId} />}
       <h1>
         DETALLE DE <em>CASO</em>
       </h1>

@@ -4,7 +4,7 @@ import { cleanup, migrate, q } from "./db.js";
 import { currentUser, HttpError, logout, publicUser, requestCode, sessionCookie, verifyCode } from "./auth.js";
 import { aiStatus, chat, transcribe } from "./chat.js";
 import { getStt } from "./ai/stt.js";
-import { casosEntidad, conversacion, demoVecino, listar, nueva, presentar } from "./reclamos.js";
+import { baja, casosEntidad, conversacion, demoVecino, editar, historial, listar, nueva, presentar } from "./reclamos.js";
 import { seedDemo } from "./demo.js";
 import { getProvider } from "./ai/index.js";
 
@@ -105,6 +105,10 @@ const routes = {
   "POST /api/conversacion/nueva": async (req) => [200, await nueva(await requireUser(req, "vecino"))],
   "GET /api/reclamos": async (req) => [200, await listar(await requireUser(req, "vecino"))],
   "POST /api/reclamos/presentar": async (req, body) => [200, await presentar(await requireUser(req, "vecino"), body)],
+  // Baja lógica y edición: sólo el dueño (el servidor filtra por user_id); cada cambio queda en reclamo_versiones.
+  "POST /api/reclamos/baja": async (req, body) => [200, await baja(await requireUser(req, "vecino"), body)],
+  "POST /api/reclamos/editar": async (req, body) => [200, await editar(await requireUser(req, "vecino"), body)],
+  "GET /api/reclamos/historial": async (req) => [200, await historial(await requireUser(req), new URL(req.url, "http://x").searchParams.get("id"))],
   // Panel de la entidad: sólo entidades, y sólo los reclamos presentados contra la entidad vinculada.
   "GET /api/entidad/perfil": async (req) => [200, { user: publicUser(await requireUser(req, "entidad")) }],
   "GET /api/reclamos/ejemplo": async (req) => [200, await demoVecino(await requireUser(req, "vecino"))],

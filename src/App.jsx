@@ -252,6 +252,9 @@ export default function App() {
             contenido={contenido}
             onVolver={() => setView("mis")}
             onNuevo={nuevoReclamo}
+            soloLectura={currentReclamo.demo}
+            onCambio={(r) => { setCurrentReclamo(r); cargarReclamos(); }}
+            onBaja={() => { setCurrentReclamo(null); cargarReclamos(); setView("mis"); }}
           />
         ) : null;
         break;

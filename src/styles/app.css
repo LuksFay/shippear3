@@ -1748,3 +1748,20 @@
   .main, .shell--chat .main, .kb-open .shell--chat .main { padding-bottom: 0; }
   .shell--chat .view--chat { padding-bottom: var(--space-lg); }
 }
+
+/* Baja / edición / historial de un reclamo */
+.badge-editado { display: inline-block; margin-left: 0.5rem; padding: 1px 6px; border: 1px solid var(--color-rule-2); font-family: var(--font-mono); font-size: 10px; letter-spacing: 0.08em; color: var(--color-neutral); vertical-align: middle; }
+.gestion { margin-top: var(--space-lg); }
+.gestion__acciones { display: flex; flex-wrap: wrap; gap: var(--space-sm); margin-top: var(--space-sm); }
+.gestion__acciones .btn { flex: 1 1 200px; }
+.gestion__baja { color: var(--color-accent); }
+.btn--danger { background: var(--color-accent); border-color: var(--color-accent); color: var(--color-accent-ink); }
+.dialogo { margin-top: var(--space-sm); padding: var(--space-md); border: 2px solid var(--color-accent); background: var(--color-surface); display: grid; gap: var(--space-sm); }
+.dialogo p { margin: 0; color: var(--color-neutral); line-height: 1.5; }
+.historial { margin: var(--space-xs) 0 var(--space-sm); }
+.historial__lista { display: grid; gap: var(--space-sm); margin-top: var(--space-sm); }
+.historial__item { border-left: 3px solid var(--color-rule-2); padding: var(--space-xs) var(--space-sm); background: var(--color-paper-2); }
+.historial__meta { font-family: var(--font-mono); font-size: 11px; letter-spacing: 0.06em; color: var(--color-muted); margin-bottom: 4px; }
+.historial__cambio { font-size: 0.95rem; line-height: 1.5; word-break: break-word; }
+.historial__cambio del { color: var(--color-muted); }
+.historial__vacio { color: var(--color-muted); font-size: 0.92rem; margin: 0; }
