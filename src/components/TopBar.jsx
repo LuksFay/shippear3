@@ -1,6 +1,6 @@
 import Icon from "./Icon.jsx";
 
-export default function TopBar({ role, onRole, dark, onTheme }) {
+export default function TopBar({ role, onRole, dark, onTheme, user, onSalir }) {
   return (
     <header className="topbar">
       <div className="topbar__brand">
@@ -8,6 +8,7 @@ export default function TopBar({ role, onRole, dark, onTheme }) {
       </div>
       <span className="topbar__tag">MESA DE ENTRADA — ROSARIO</span>
       <div className="topbar__controls">
+        {user && (
         <div className="role-switch" role="tablist" aria-label="Perfil">
           <button
             type="button"
@@ -24,6 +25,7 @@ export default function TopBar({ role, onRole, dark, onTheme }) {
             ENTIDAD
           </button>
         </div>
+        )}
         <button
           type="button"
           className="icon-btn"
@@ -33,6 +35,11 @@ export default function TopBar({ role, onRole, dark, onTheme }) {
         >
           <Icon name={dark ? "sun" : "moon"} size={15} />
         </button>
+        {user && (
+          <button type="button" className="icon-btn" onClick={onSalir} aria-label="Salir" title={`Salir (DNI ${user.dni})`}>
+            <Icon name="x" size={15} />
+          </button>
+        )}
       </div>
     </header>
   );

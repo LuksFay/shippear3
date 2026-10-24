@@ -1,4 +1,4 @@
-import { useCallback, useMemo, useState } from "react";
+import { useCallback, useEffect, useMemo, useState } from "react";
 import contenido from "./mock/contenido.json";
 import entidades from "./mock/entidades.json";
 import reclamosMock from "./mock/reclamos.json";
@@ -19,6 +19,8 @@ import MisReclamos from "./screens/MisReclamos.jsx";
 import Bandeja from "./screens/Bandeja.jsx";
 import CasoDetalle from "./screens/CasoDetalle.jsx";
 import Patrones from "./screens/Patrones.jsx";
+import Login from "./screens/Login.jsx";
+import { api } from "./lib/api.js";
 
 function hoy() {
   return new Date().toISOString().slice(0, 10);
@@ -31,6 +33,7 @@ function parseMonto(s) {
 }
 
 export default function App() {
+  const [user, setUser] = useState(undefined); // undefined = verificando sesión
   const [role, setRole] = useState("ciudadano");
   const [dark, setDark] = useState(false);
   const [view, setView] = useState("home");
@@ -40,6 +43,20 @@ export default function App() {
   const [datos, setDatos] = useState(null);
   const [currentReclamo, setCurrentReclamo] = useState(null);
   const [currentCaso, setCurrentCaso] = useState(null);
+
+  useEffect(() => {
+    api
+      .me()
+      .then((r) => setUser(r.user))
+      .catch(() => setUser(null));
+  }, []);
+
+  const salir = useCallback(async () => {
+    await api.salir().catch(() => {});
+    setUser(null);
+    setView("home");
+    setRole("ciudadano");
+  }, []);
 
   const nroExpediente = useMemo(() => {
     const nums = reclamos.map((r) => Number(r.id.split("-").pop()) || 0);
@@ -150,7 +167,13 @@ export default function App() {
   if (role === "ciudadano") {
     switch (view) {
       case "chat":
-        screen = <Chat contenido={contenido} nroExpediente={nroExpediente} onConfirmar={(d) => { setDatos(d); setView("confirmar"); }} />;
+        screen = (
+          <Chat
+            nroExpediente={nroExpediente}
+            onConfirmar={(d) => { setDatos(d); setView("confirmar"); }}
+            onSinSesion={() => setUser(null)}
+          />
+        );
         break;
       case "confirmar":
         screen = datos ? (
@@ -232,17 +255,23 @@ export default function App() {
     );
   }
 
-  const viewKey = `${role}-${view}-${currentReclamo?.id || ""}-${currentCaso?.id || ""}-${filtro}`;
+  if (user === undefined) {
+    screen = null;
+  } else if (!user) {
+    screen = <Login onLogin={(u) => { setUser(u); setView("home"); }} />;
+  }
+
+  const viewKey = `${user ? "in" : "out"}-${role}-${view}-${currentReclamo?.id || ""}-${currentCaso?.id || ""}-${filtro}`;
 
   return (
     <div className="shell">
-      <TopBar role={role} onRole={handleRole} dark={dark} onTheme={toggleTheme} />
+      <TopBar role={role} onRole={handleRole} dark={dark} onTheme={toggleTheme} user={user} onSalir={salir} />
       <main className="main">
         <div key={viewKey} className="fuse-page-in">
           {screen}
         </div>
       </main>
-      <BottomNav role={role} active={navActivo} onNav={handleNav} />
+      {user && <BottomNav role={role} active={navActivo} onNav={handleNav} />}
     </div>
   );
 }

@@ -25,16 +25,6 @@
       "texto": "Reclamo listo con tus derechos y la norma oficial. Seguimos el plazo de 10 días hábiles del BCRA y escalamos si no responden."
     }
   ],
-  "chat": {
-    "saludo": "Hola. Contame qué te pasó con el banco, la tarjeta o la billetera. Escribí o mandá un audio.",
-    "pedidoResumen": "Bien. Ahora subí una foto o el PDF del resumen donde aparece el cargo o el problema.",
-    "leyendo": [
-      "> leyendo el resumen...",
-      "> extrayendo entidad, monto, fecha y operación...",
-      "> clasificando conflicto..."
-    ],
-    "confirmar": "La IA leyó tu resumen. Revisá estos datos y confirmá. Si hay algo mal, tocá y corregilo."
-  },
   "derechos": {
     "intro": "Estos son tus derechos para este caso, en lenguaje simple. Tocá la norma para abrir el texto oficial."
   },
