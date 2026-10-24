@@ -1812,3 +1812,11 @@ html { font-size: 106.25%; }
 }
 .view__sub { font-size: 1.05rem; line-height: 1.55; }
 .ticket--urgente { border-left-color: var(--color-alert); }
+
+/* Landing: eslogan, sello piloto, aviso y sección para la Oficina */
+.hero__title--eslogan { font-size: clamp(2.6rem, 11vw, 6.5rem); line-height: 0.95; text-transform: none; letter-spacing: -0.02em; }
+.hero__claim--sello { margin-top: var(--space-md); }
+.hero__aviso { margin: var(--space-sm) 0 0; font-size: var(--text-sm); color: var(--color-muted); }
+.oficina-landing__texto { max-width: 62ch; margin: 0 0 var(--space-md); line-height: 1.55; }
+.oficina-landing__items { display: grid; gap: var(--space-md); grid-template-columns: repeat(auto-fit, minmax(220px, 1fr)); margin-bottom: var(--space-lg); }
+.oficina-landing__item { border-top: var(--rule-fine) solid var(--color-rule); padding-top: var(--space-sm); }

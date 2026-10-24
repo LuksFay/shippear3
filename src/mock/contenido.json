@@ -1,12 +1,13 @@
 {
   "motto": "Te cobraron algo que no pediste. Contanos. La ley está de tu lado.",
   "hero": {
-    "label": "OFICINA DEL CONSUMIDOR — ROSARIO",
-    "titleTop": "TU PLATA",
-    "titleBottom": "VALE.",
-    "stamp": "A FAVOR",
-    "claimWord": "SALDO",
-    "sub": "Conflictos con bancos, tarjetas y billeteras virtuales. Contanos qué pasó, subí una foto o PDF del resumen y la app arma el reclamo con la norma oficial. Te acompañamos hasta que te devuelvan la plata."
+    "label": "SALDO A FAVOR — OFICINA DEL CONSUMIDOR · ROSARIO",
+    "titleTop": "Poné el saldo",
+    "titleBottom": "a tu favor.",
+    "stamp": "Piloto en Rosario · Gratis",
+    "sub": "Si el banco, la tarjeta o la billetera te cobró algo que no correspondía, te armamos el reclamo y lo seguimos con vos.",
+    "cta": "¿Te estafaron? Empezá acá",
+    "aviso": "Esto es orientación, no asesoramiento legal."
   },
   "steps": [
     {
@@ -33,9 +34,21 @@
     "nota": "La entidad tiene 10 días hábiles para responder desde que recibe el reclamo (BCRA). Si vence sin respuesta, armamos el reclamo ante el BCRA."
   },
   "escalera": [
-    { "paso": 1, "titulo": "ENTIDAD", "detalle": "Reclamo enviado. Plazo: 10 días hábiles." },
-    { "paso": 2, "titulo": "BCRA", "detalle": "Si no responden, se escala el reclamo al Banco Central." },
-    { "paso": 3, "titulo": "OFICINA DEL CONSUMIDOR", "detalle": "Casos complejos: atención presencial en la oficina." }
+    {
+      "paso": 1,
+      "titulo": "ENTIDAD",
+      "detalle": "Reclamo enviado. Plazo: 10 días hábiles."
+    },
+    {
+      "paso": 2,
+      "titulo": "BCRA",
+      "detalle": "Si no responden, se escala el reclamo al Banco Central."
+    },
+    {
+      "paso": 3,
+      "titulo": "OFICINA DEL CONSUMIDOR",
+      "detalle": "Casos complejos: atención presencial en la oficina."
+    }
   ],
   "reclamoListo": {
     "titulo": "TU RECLAMO ESTÁ SELLADO",
@@ -47,12 +60,38 @@
     "titulo": "BANDEJA DE ENTRADA",
     "sub": "Casos con triage automático: verde para autoservicio, amarillo para revisión de un empleado, rojo para atención presencial. La prioridad se calcula con reglas configurables, no con IA."
   },
-  "filtros": ["TODOS", "VERDES", "AMARILLOS", "ROJOS", "VENCIDOS", "ARCHIVO"],
+  "filtros": [
+    "TODOS",
+    "VERDES",
+    "AMARILLOS",
+    "ROJOS",
+    "VENCIDOS",
+    "ARCHIVO"
+  ],
   "intimacion": {
     "titulo": "NOTA DE INTIMACIÓN COLECTIVA",
     "aviso": "BORRADOR – requiere revisión jurídica",
     "fundamento": "Ley 24.240 de Defensa del Consumidor, arts. 4 (deber de información) y 8 bis (trato digno y prácticas abusivas).",
     "articuloTipo": "[Artículo específico para «{tipo}»: a completar y validar por el área de legales]",
     "cuerpo": "Ante {n} reclamos del tipo «{tipo}» registrados contra {entidad} en {periodo}, esta Oficina intima a {entidad} a cesar la conducta cuestionada en el plazo de 5 días hábiles, bajo apercibimiento de denuncia ante los organismos competentes (Ley 24.240, arts. 4 y 8 bis). La intimación se funda en el patrón detectado con reglas configurables y debe ser revisada por el área jurídica antes de su firma."
+  },
+  "oficina": {
+    "titulo": "Para la Oficina del Consumidor",
+    "texto": "Saldo a Favor es un piloto pensado para trabajar junto a la Oficina del Consumidor de Rosario. Los reclamos llegan ordenados y con la documentación adjunta, para que el equipo dedique su tiempo a los casos que lo necesitan.",
+    "items": [
+      {
+        "titulo": "Bandeja con prioridad",
+        "texto": "Cada caso llega clasificado: autoservicio, revisión de un empleado o atención presencial, con el plazo de 10 días hábiles a la vista."
+      },
+      {
+        "titulo": "Patrones por entidad",
+        "texto": "Reclamos que se repiten contra una misma entidad, con un borrador de intimación que siempre pasa por revisión jurídica."
+      },
+      {
+        "titulo": "Directorio de entidades",
+        "texto": "Canales oficiales de reclamo de bancos, aseguradoras y billeteras, con el destino sugerido para cada caso. Nada se envía automáticamente."
+      }
+    ],
+    "cta": "Soy de la Oficina"
   }
 }
