@@ -22,3 +22,9 @@ dist-ssr
 *.njsproj
 *.sln
 *.sw?
+
+# Secretos: nunca al repo (es público)
+.env
+.env.*
+!.env.example
+server/node_modules
