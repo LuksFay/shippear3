@@ -6,7 +6,7 @@ import { HttpError } from "./auth.js";
 export const nro = (r) => `RE-${new Date(r.created_at).getFullYear()}-${String(r.id).padStart(4, "0")}`;
 const IA = { xai: "Grok", local: "Qwen", openai: "OpenAI" };
 
-const ESTADO = { borrador: "SIN TERMINAR", en_tramite: "EN TRÁMITE", respondido: "RESPONDIDO", escalado: "ESCALADO AL BCRA", resuelto: "RESUELTO" };
+const ESTADO = { borrador: "SIN TERMINAR", recibido: "RECIBIDO", baja: "DADO DE BAJA", en_tramite: "EN TRÁMITE", respondido: "RESPONDIDO", escalado: "ESCALADO AL BCRA", resuelto: "RESUELTO" };
 
 // Días hábiles (lun-vie) desde la presentación.
 function diasHabiles(desde) {
@@ -30,7 +30,7 @@ function parseMonto(s) {
 export function ticket(r) {
   const d = r.datos || {};
   const dias = diasHabiles(r.presentado_at);
-  const vencido = r.estado === "en_tramite" && dias != null && dias > 10;
+  const vencido = (r.estado === "recibido" || r.estado === "en_tramite") && dias != null && dias > 10;
   return {
     id: nro(r),
     dbId: Number(r.id),
@@ -128,7 +128,7 @@ export async function listar(user) {
   return { reclamos: rows.map(ticket) };
 }
 
-// POST /api/reclamos/presentar {id, datos, fundamento} → el borrador pasa a EN TRÁMITE.
+// POST /api/reclamos/presentar {id, datos, fundamento} → el borrador pasa a RECIBIDO (visible en la bandeja de la Oficina).
 export async function presentar(user, body) {
   const r = await reclamoDe(user.id, Number(body?.id));
   if (r.estado !== "borrador") return { reclamo: ticket(r) };
@@ -142,7 +142,7 @@ export async function presentar(user, body) {
   if (!datos.entidad || !datos.tipo) throw new HttpError(400, "datos_incompletos", "Faltan datos del reclamo (entidad y tipo).");
   const u = (
     await q(
-      `UPDATE reclamos SET estado = 'en_tramite', activa = false, datos = $3, fundamento = $4, presentado_at = now(), updated_at = now()
+      `UPDATE reclamos SET estado = 'recibido', activa = false, datos = $3, fundamento = $4, presentado_at = now(), updated_at = now()
         WHERE id = $1 AND user_id = $2 RETURNING *`,
       [r.id, user.id, datos, limpio(body?.fundamento, 4000)],
     )
@@ -167,11 +167,12 @@ const iniciales = (n) => String(n || "").split(/\s+/).filter(Boolean).map((w) =>
 
 // Panel de la Oficina del Consumidor (rol "entidad" = la oficina).
 // - Casos demo: siempre visibles, marcados demo.
-// - Reclamos reales: sólo si la cuenta está habilitada (users.entidad_id = 'oficina-rosario' o CUIT en OFICINA_CUITS).
+// - Reclamos reales: todas las cuentas de Oficina (rol entidad). Si OFICINA_CUITS está definido, sólo esos CUIT
+//   (o users.entidad_id = 'oficina-rosario') ven los reales; el resto ve sólo la demo.
 // Del vecino nunca se muestra DNI ni email: sólo iniciales, distrito y datos declarados.
 export function oficinaHabilitada(user) {
   const cuits = String(process.env.OFICINA_CUITS || "").split(/[\s,;]+/).filter(Boolean);
-  return user.entidad_id === "oficina-rosario" || cuits.includes(user.doc_number);
+  return cuits.length === 0 || user.entidad_id === "oficina-rosario" || cuits.includes(user.doc_number);
 }
 
 export async function casosEntidad(user) {
@@ -179,7 +180,7 @@ export async function casosEntidad(user) {
   const rows = (
     await q(
       `SELECT r.* FROM reclamos r
-        WHERE r.estado <> 'borrador' AND (r.demo OR $1)
+        WHERE r.estado NOT IN ('borrador', 'baja') AND (r.demo OR $1)
         ORDER BY r.presentado_at DESC LIMIT 500`,
       [real],
     )

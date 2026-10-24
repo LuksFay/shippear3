@@ -7,6 +7,7 @@ const NOW = Date.now();
 
 const estadoTone = {
   "EN TRÁMITE": "plain",
+  RECIBIDO: "plain",
   VENCIDO: "",
   RESPONDIDO: "plain",
   RESUELTO: "ok",

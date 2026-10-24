@@ -16,7 +16,7 @@ const S = "servicio-no-solicitado";
 // [vecino, entidad, categoria, tipo, monto, díasDesdePresentado, estado, resumen, operacion]
 const CASOS = [
   ["demo-mirta", "Delta Banco", "BANCOS", S, 25500, 18, "en_tramite", "Le cobran un seguro de vida que nunca pidió: $ 8.500 por mes durante 3 meses.", "SEG-448120"],
-  ["demo-mirta", "Tarjeta Clave", "TARJETAS", "cargo-no-reconocido", 42300, 5, "en_tramite", "Compra online de $ 42.300 que no hizo, en el resumen de septiembre.", "TC-99031"],
+  ["demo-mirta", "Tarjeta Clave", "TARJETAS", "cargo-no-reconocido", 42300, 5, "recibido", "Compra online de $ 42.300 que no hizo, en el resumen de septiembre.", "TC-99031"],
   ["demo-mirta", "Billetera Luma", "BILLETERAS", "debito-no-baja", 3200, 40, "resuelto", "Débito mensual que no le daban de baja. La billetera devolvió lo cobrado.", ""],
   ["demo-jorge", "Delta Banco", "BANCOS", S, 12000, 9, "en_tramite", "Seguro de desempleo agregado a la cuenta sueldo sin autorización.", ""],
   ["demo-lucia", "Delta Banco", "BANCOS", S, 6900, 7, "en_tramite", "Asistencia al viajero cobrada sin haberla contratado.", ""],

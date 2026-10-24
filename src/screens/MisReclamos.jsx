@@ -12,7 +12,7 @@ export default function MisReclamos({ reclamos, onNuevo, onOpen, onVolver }) {
 
   const filtrados = reclamos.filter((r) => {
     if (filtro === "TODOS") return true;
-    if (filtro === "EN TRÁMITE") return r.estado === "EN TRÁMITE" || r.borrador;
+    if (filtro === "EN TRÁMITE") return r.estado === "EN TRÁMITE" || r.estado === "RECIBIDO" || r.borrador;
     if (filtro === "VENCIDOS") return r.estado === "VENCIDO";
     if (filtro === "ESCALADOS") return r.estado === "ESCALADO AL BCRA";
     return r.estado === "RESUELTO";

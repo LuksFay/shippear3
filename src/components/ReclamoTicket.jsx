@@ -3,6 +3,7 @@ import Barcode from "./Barcode.jsx";
 
 const tonePorEstado = {
   "EN TRÁMITE": "plain",
+  RECIBIDO: "plain",
   VENCIDO: "",
   "ESCALADO AL BCRA": "warn",
   RESPONDIDO: "plain",

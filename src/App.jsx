@@ -96,6 +96,13 @@ export default function App() {
     else cargarReclamos();
   }, [user, view, cargarReclamos, cargarCasos]);
 
+  // La Oficina ve los reclamos nuevos sin recargar: refresco cada 30 s mientras la pestaña está visible.
+  useEffect(() => {
+    if (user?.role !== "entidad") return undefined;
+    const t = setInterval(() => document.visibilityState === "visible" && cargarCasos(), 30000);
+    return () => clearInterval(t);
+  }, [user, cargarCasos]);
+
   // Patrones calculados de los casos reales (entidad + tipo, últimos 30 días).
   const patrones = useMemo(() => {
     const ahora = Date.now(), mes = 30 * 86400000;

@@ -99,6 +99,10 @@ CREATE INDEX IF NOT EXISTS reclamo_mensajes_idx ON reclamo_mensajes (reclamo_id,
 
 -- v4: casos de ejemplo marcados como demo (dueños sin login posible: doc_number "demo-…").
 ALTER TABLE reclamos ADD COLUMN IF NOT EXISTS demo BOOLEAN NOT NULL DEFAULT false;
+-- v5: estado 'recibido' (recién presentado, visible para la Oficina) y 'baja' (dado de baja por el vecino; se conserva).
+ALTER TABLE reclamos DROP CONSTRAINT IF EXISTS reclamos_estado_check;
+ALTER TABLE reclamos ADD CONSTRAINT reclamos_estado_check
+  CHECK (estado IN ('borrador', 'recibido', 'en_tramite', 'respondido', 'escalado', 'resuelto', 'baja'));
 `;
 
 export async function migrate() {
