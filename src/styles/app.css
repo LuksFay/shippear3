@@ -110,7 +110,22 @@
   color: var(--color-ink);
   line-height: 1;
   white-space: nowrap;
+  background: none;
+  border: none;
+  padding: var(--space-2xs) 0;
+  cursor: pointer;
+  text-align: left;
+  transition: color var(--dur-yui-micro);
 }
+.topbar__brand:hover {
+  color: var(--color-accent);
+  text-decoration: underline;
+  text-decoration-thickness: 2px;
+  text-underline-offset: 5px;
+  text-decoration-color: var(--color-accent);
+}
+.topbar__brand:hover b { color: var(--color-ink); }
+.topbar__brand:active { transform: scale(0.97); }
 
 .topbar__brand b { color: var(--color-accent); font-weight: 800; }
 

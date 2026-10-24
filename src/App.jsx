@@ -75,6 +75,22 @@ export default function App() {
     window.scrollTo(0, 0);
   }, []);
 
+  // El brand "saldo a favor" lleva al inicio: sin sesión → landing (o sale del login);
+  // con sesión → la pantalla principal del tipo de usuario logueado.
+  const irAlInicio = useCallback(() => {
+    if (user) {
+      setView(user.role === "entidad" ? "bandeja" : "chat");
+      setFiltro("TODOS");
+      setDatos(null);
+      setCurrentReclamo(null);
+      setCurrentCaso(null);
+      window.scrollTo(0, 0);
+    } else {
+      setPublico({ pantalla: "landing", rol: "vecino" });
+      window.scrollTo(0, 0);
+    }
+  }, [user]);
+
   const nroExpediente = useMemo(() => {
     const nums = reclamos.map((r) => Number(r.id.split("-").pop()) || 0);
     return `RE-2026-${String(Math.max(0, ...nums) + 1).padStart(4, "0")}`;
@@ -257,11 +273,9 @@ export default function App() {
         <Home
           publico
           contenido={contenido}
-          reclamos={reclamos}
           onNuevo={() => irAlIngreso("vecino")}
           onVerMis={() => irAlIngreso("vecino")}
           onEntidad={() => irAlIngreso("entidad")}
-          onOpen={() => irAlIngreso("vecino")}
         />
       );
   }
@@ -270,7 +284,7 @@ export default function App() {
 
   return (
     <div className={`shell${user && role === "ciudadano" && view === "chat" ? " shell--chat" : ""}`}>
-      <TopBar dark={dark} onTheme={toggleTheme} user={user} onSalir={salir} onIngresar={user === null && publico.pantalla === "landing" ? () => irAlIngreso("vecino") : null} />
+      <TopBar dark={dark} onTheme={toggleTheme} user={user} onSalir={salir} onIngresar={user === null && publico.pantalla === "landing" ? () => irAlIngreso("vecino") : null} onHome={irAlInicio} />
       <main className="main">
         <div key={viewKey} className="fuse-page-in">
           {screen}

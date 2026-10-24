@@ -40,9 +40,27 @@ export default function MisReclamos({ reclamos, onNuevo, onOpen, onVolver }) {
       </div>
 
       <div className="list-stack" data-fuse-container>
-        {filtrados.map((r) => (
-          <ReclamoTicket key={r.id} reclamo={r} onOpen={onOpen} />
-        ))}
+        {filtrados.length === 0 ? (
+          <div className="derecho" data-fuse="fade-up" data-fuse-auto>
+            <div className="derecho__label">BANDEJA VACÍA</div>
+            <p className="derecho__texto">
+              Todavía no hiciste reclamos. Contanos qué te pasó con el banco, la
+              tarjeta o la billetera y armamos el primero.
+            </p>
+            <button
+              type="button"
+              className="btn btn--primary"
+              style={{ marginTop: "0.75rem" }}
+              onClick={onNuevo}
+            >
+              NUEVO RECLAMO <Icon name="plus" size={14} />
+            </button>
+          </div>
+        ) : (
+          filtrados.map((r) => (
+            <ReclamoTicket key={r.id} reclamo={r} onOpen={onOpen} />
+          ))
+        )}
       </div>
 
       <div className="form-group" style={{ marginTop: "1.5rem" }}>

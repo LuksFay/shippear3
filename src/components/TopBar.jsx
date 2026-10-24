@@ -1,13 +1,19 @@
 import Icon from "./Icon.jsx";
 import { formatDoc } from "../lib/doc.js";
 
-export default function TopBar({ dark, onTheme, user, onSalir, onIngresar }) {
+export default function TopBar({ dark, onTheme, user, onSalir, onIngresar, onHome }) {
   const docLabel = user ? `${user.docType || (user.role === "entidad" ? "CUIT" : "DNI")} ${formatDoc(user.doc, user.role)}` : "";
   return (
     <header className="topbar">
-      <div className="topbar__brand">
+      <button
+        type="button"
+        className="topbar__brand"
+        onClick={onHome}
+        aria-label="Volver al inicio"
+        title="Volver al inicio"
+      >
         saldo a<b>favor</b>
-      </div>
+      </button>
       <span className="topbar__tag">MESA DE ENTRADA — ROSARIO</span>
       <div className="topbar__controls">
         {user && (

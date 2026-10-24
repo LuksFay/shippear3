@@ -1,11 +1,9 @@
 import Stamp from "../components/Stamp.jsx";
-import ReclamoTicket from "../components/ReclamoTicket.jsx";
 import Barcode from "../components/Barcode.jsx";
 import Icon from "../components/Icon.jsx";
 
-export default function Home({ contenido, reclamos, onNuevo, onVerMis, onOpen, onEntidad }) {
+export default function Home({ contenido, onNuevo, onVerMis, onEntidad }) {
   const { hero, steps } = contenido;
-  const ultimos = reclamos.slice(0, 2);
   return (
     <div className="view view--wide">
       <section className="hero">
@@ -61,21 +59,6 @@ export default function Home({ contenido, reclamos, onNuevo, onVerMis, onOpen, o
             </div>
           ))}
         </div>
-      </section>
-
-      <section className="section" aria-label="Últimos reclamos">
-        <div className="section__head">
-          <h2>ÚLTIMOS RECLAMOS</h2>
-          <span className="section__num">EJEMPLOS</span>
-        </div>
-        <div className="list-stack">
-          {ultimos.map((r) => (
-            <ReclamoTicket key={r.id} reclamo={r} onOpen={onOpen} />
-          ))}
-        </div>
-        <button type="button" className="list-stack__foot" onClick={onVerMis}>
-          VER TODOS <Icon name="arrowRight" size={13} />
-        </button>
       </section>
 
       <footer className="footer">
