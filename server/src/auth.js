@@ -214,7 +214,7 @@ export async function currentUser(req) {
   if (!raw) return null;
   const row = (
     await q(
-      `SELECT s.id AS sid, u.id, u.doc_number, u.email, u.role FROM sessions s
+      `SELECT s.id AS sid, u.id, u.doc_number, u.email, u.role, u.entidad_id FROM sessions s
          JOIN users u ON u.id = s.user_id
         WHERE s.token_hash = $1 AND s.expires_at > now()`,
       [sha256(raw)],

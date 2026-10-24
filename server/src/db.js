@@ -65,6 +65,37 @@ CREATE TABLE IF NOT EXISTS ai_requests (
   created_at  TIMESTAMPTZ NOT NULL DEFAULT now()
 );
 CREATE INDEX IF NOT EXISTS ai_requests_user_idx ON ai_requests (user_id, created_at DESC);
+
+-- v3: cada conversación del chat es un reclamo (borrador hasta que se presenta). Historial persistido.
+CREATE TABLE IF NOT EXISTS reclamos (
+  id            BIGSERIAL PRIMARY KEY,
+  user_id       BIGINT NOT NULL REFERENCES users(id) ON DELETE CASCADE,
+  estado        TEXT NOT NULL DEFAULT 'borrador' CHECK (estado IN ('borrador', 'en_tramite', 'respondido', 'escalado', 'resuelto')),
+  activa        BOOLEAN NOT NULL DEFAULT true,
+  datos         JSONB NOT NULL DEFAULT '{}'::jsonb,
+  memoria       TEXT NOT NULL DEFAULT '',
+  listo         BOOLEAN NOT NULL DEFAULT false,
+  fundamento    TEXT,
+  presentado_at TIMESTAMPTZ,
+  created_at    TIMESTAMPTZ NOT NULL DEFAULT now(),
+  updated_at    TIMESTAMPTZ NOT NULL DEFAULT now()
+);
+CREATE INDEX IF NOT EXISTS reclamos_user_idx ON reclamos (user_id, updated_at DESC);
+CREATE UNIQUE INDEX IF NOT EXISTS reclamos_activa_uq ON reclamos (user_id) WHERE activa;
+
+CREATE TABLE IF NOT EXISTS reclamo_mensajes (
+  id          BIGSERIAL PRIMARY KEY,
+  reclamo_id  BIGINT NOT NULL REFERENCES reclamos(id) ON DELETE CASCADE,
+  role        TEXT NOT NULL CHECK (role IN ('user', 'assistant')),
+  kind        TEXT NOT NULL DEFAULT 'texto' CHECK (kind IN ('texto', 'audio', 'archivo')),
+  text        TEXT NOT NULL DEFAULT '',
+  adjunto     JSONB,  -- metadatos del adjunto (nombre, tipo, páginas, segundos de audio, miniatura); nunca el archivo
+  contexto    TEXT,   -- lo extraído del adjunto (texto del PDF o lo que la IA leyó de la imagen)
+  provider    TEXT,
+  model       TEXT,
+  created_at  TIMESTAMPTZ NOT NULL DEFAULT now()
+);
+CREATE INDEX IF NOT EXISTS reclamo_mensajes_idx ON reclamo_mensajes (reclamo_id, id);
 `;
 
 export async function migrate() {

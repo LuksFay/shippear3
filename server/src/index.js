@@ -4,6 +4,7 @@ import { cleanup, migrate, q } from "./db.js";
 import { currentUser, HttpError, logout, publicUser, requestCode, sessionCookie, verifyCode } from "./auth.js";
 import { aiStatus, chat, transcribe } from "./chat.js";
 import { getStt } from "./ai/stt.js";
+import { casosEntidad, conversacion, listar, nueva, presentar } from "./reclamos.js";
 import { getProvider } from "./ai/index.js";
 
 const MAX_BODY = 12 * 1024 * 1024;
@@ -98,8 +99,14 @@ const routes = {
   // Reclamos con IA: sólo ciudadanos (vecino).
   "POST /api/chat": async (req, body) => [200, await chat(await requireUser(req, "vecino"), body)],
   "POST /api/transcribe": async (req, body) => [200, await transcribe(await requireUser(req, "vecino"), body)],
-  // Panel de la entidad: sólo entidades (por ahora devuelve el perfil; la bandeja real se conecta acá).
+  // Historial persistido: la conversación activa (o ?id= para retomar un borrador propio).
+  "GET /api/conversacion": async (req) => [200, await conversacion(await requireUser(req, "vecino"), new URL(req.url, "http://x").searchParams.get("id"))],
+  "POST /api/conversacion/nueva": async (req) => [200, await nueva(await requireUser(req, "vecino"))],
+  "GET /api/reclamos": async (req) => [200, await listar(await requireUser(req, "vecino"))],
+  "POST /api/reclamos/presentar": async (req, body) => [200, await presentar(await requireUser(req, "vecino"), body)],
+  // Panel de la entidad: sólo entidades, y sólo los reclamos presentados contra la entidad vinculada.
   "GET /api/entidad/perfil": async (req) => [200, { user: publicUser(await requireUser(req, "entidad")) }],
+  "GET /api/entidad/casos": async (req) => [200, await casosEntidad(await requireUser(req, "entidad"))],
 };
 
 const server = http.createServer(async (req, res) => {

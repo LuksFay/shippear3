@@ -5,6 +5,7 @@ import { getStt } from "./ai/stt.js";
 import { HttpError } from "./auth.js";
 import { SYSTEM, SCHEMA, TIPO_IDS } from "./prompt.js";
 import { readPdf } from "./pdf.js";
+import { borradorParaChat, mensajes, nro } from "./reclamos.js";
 
 const MAX_HISTORY = 24;
 const MAX_TEXT = 2000;
@@ -70,69 +71,172 @@ async function logUse(userId, kind, provider, ok, usage, used) {
   ).catch(() => {});
 }
 
-async function buildMessages(history, attachment, provider) {
-  const msgs = (Array.isArray(history) ? history : [])
-    .slice(-MAX_HISTORY)
-    .filter((m) => m && (m.role === "user" || m.role === "assistant") && typeof m.content === "string")
-    .map((m) => ({ role: m.role, content: m.content.slice(0, MAX_TEXT) }));
-
-  if (attachment && attachment.dataUrl) {
-    const dataUrl = String(attachment.dataUrl);
-    const approxBytes = Math.floor((dataUrl.length - dataUrl.indexOf(",") - 1) * 0.75);
-    if (approxBytes > MAX_FILE_BYTES) throw new HttpError(413, "archivo_grande", "El archivo es muy grande (máx. 8 MB).");
-    if (!provider.supportsFiles) throw new HttpError(400, "sin_archivos", "Este modelo todavía no puede leer archivos.");
-    let parts;
-    if (IMG_RE.test(dataUrl)) {
-      parts = [{ type: "text", text: "Te adjunto el resumen. Leelo y extraé los datos." }, { type: "image_url", image_url: { url: dataUrl } }];
-    } else if (PDF_RE.test(dataUrl)) {
-      // El PDF se lee en el servidor: texto si lo tiene; si es un escaneo, las primeras páginas como imágenes.
-      let pdf;
-      try {
-        pdf = await readPdf(Buffer.from(dataUrl.slice(dataUrl.indexOf(",") + 1), "base64"));
-      } catch (e) {
-        console.error("[pdf]", e.message);
-        throw new HttpError(400, "pdf_invalido", "No pude abrir el PDF. Probá con una foto o captura del resumen.");
-      }
-      if (pdf.text) {
-        parts = [{ type: "text", text: `Te adjunto el resumen en PDF (${pdf.pages} pág.). Este es su texto; leelo y extraé los datos:\n"""\n${pdf.text}\n"""` }];
-      } else if (pdf.images.length) {
-        parts = [
-          { type: "text", text: `Te adjunto el resumen en PDF escaneado (${pdf.pages} pág.; van las primeras ${pdf.images.length} como imagen). Leelo y extraé los datos.` },
-          ...pdf.images.map((url) => ({ type: "image_url", image_url: { url } })),
-        ];
-      } else throw new HttpError(400, "pdf_vacio", "El PDF parece vacío. Probá con una foto o captura del resumen.");
-    } else throw new HttpError(400, "archivo_invalido", "Subí una foto (JPG, PNG) o un PDF.");
-    const last = msgs[msgs.length - 1];
-    if (last && last.role === "user") {
-      msgs[msgs.length - 1] = { role: "user", content: [{ type: "text", text: last.content }, ...parts] };
-    } else {
-      msgs.push({ role: "user", content: parts });
-    }
+// Lee el adjunto del turno actual: partes para el modelo (texto/imagenes) + metadatos y texto extraído para guardar.
+async function readAttachment(attachment, provider) {
+  const dataUrl = String(attachment.dataUrl);
+  const approxBytes = Math.floor((dataUrl.length - dataUrl.indexOf(",") - 1) * 0.75);
+  if (approxBytes > MAX_FILE_BYTES) throw new HttpError(413, "archivo_grande", "El archivo es muy grande (máx. 8 MB).");
+  if (!provider.supportsFiles) throw new HttpError(400, "sin_archivos", "Este modelo todavía no puede leer archivos.");
+  const name = String(attachment.name || "adjunto").replace(/[^\p{L}\p{N} ._()-]/gu, "").slice(0, 80) || "adjunto";
+  // Miniatura chica (la arma el navegador) sólo para volver a mostrar la burbuja; nunca el archivo completo.
+  const prev = String(attachment.preview || "");
+  const preview = /^data:image\/(jpeg|png|webp);base64,[a-z0-9+/=]+$/i.test(prev) && prev.length < 160_000 ? prev : null;
+  if (IMG_RE.test(dataUrl)) {
+    return {
+      meta: { name, tipo: "foto", bytes: approxBytes, preview },
+      contexto: "",
+      parts: [{ type: "text", text: `[Adjunto: foto "${name}". Leela y extraé los datos.]` }, { type: "image_url", image_url: { url: dataUrl } }],
+    };
   }
-  return msgs;
+  if (PDF_RE.test(dataUrl)) {
+    // El PDF se lee en el servidor: texto si lo tiene; si es un escaneo, las primeras páginas como imágenes.
+    let pdf;
+    try {
+      pdf = await readPdf(Buffer.from(dataUrl.slice(dataUrl.indexOf(",") + 1), "base64"));
+    } catch (e) {
+      console.error("[pdf]", e.message);
+      throw new HttpError(400, "pdf_invalido", "No pude abrir el PDF. Probá con una foto o captura del resumen.");
+    }
+    const meta = { name, tipo: "pdf", bytes: approxBytes, pages: pdf.pages };
+    if (pdf.text) {
+      return {
+        meta,
+        contexto: pdf.text.slice(0, 12_000),
+        parts: [{ type: "text", text: `[Adjunto: PDF "${name}" (${pdf.pages} pág.). Texto:\n"""\n${pdf.text}\n"""]` }],
+      };
+    }
+    if (pdf.images.length) {
+      return {
+        meta,
+        contexto: "",
+        parts: [
+          { type: "text", text: `[Adjunto: PDF escaneado "${name}" (${pdf.pages} pág.; van las primeras ${pdf.images.length} como imagen). Leelo y extraé los datos.]` },
+          ...pdf.images.map((url) => ({ type: "image_url", image_url: { url } })),
+        ],
+      };
+    }
+    throw new HttpError(400, "pdf_vacio", "El PDF parece vacío. Probá con una foto o captura del resumen.");
+  }
+  throw new HttpError(400, "archivo_invalido", "Subí una foto (JPG, PNG) o un PDF.");
 }
 
+// Texto de un mensaje guardado para el modelo. Los adjuntos viejos van como lo que se extrajo de ellos.
+function asContent(m, recortar) {
+  let t = m.text || "";
+  if (m.kind === "audio") t = `(audio transcripto) ${t}`;
+  if (m.adjunto) {
+    const ctx = String(m.contexto || "").slice(0, recortar ? 1500 : 12_000);
+    const tipo = m.adjunto.tipo === "pdf" ? `PDF "${m.adjunto.name}"${m.adjunto.pages ? ` (${m.adjunto.pages} pág.)` : ""}` : `foto "${m.adjunto.name}"`;
+    t = `${t ? t + "\n" : ""}[Adjunto anterior: ${tipo}. ${ctx ? `Contenido extraído: ${ctx}` : "Sin contenido extraído."}]`;
+  }
+  return t.slice(0, recortar ? 2500 : 14_000);
+}
+
+const BUDGET = 16_000; // caracteres de historial (aprox. 4-5 mil tokens); lo más viejo queda en la memoria.
+
+function buildContext(rows, current) {
+  const out = [];
+  let used = 0;
+  let omitidos = 0;
+  for (let i = rows.length - 1; i >= 0; i--) {
+    const m = rows[i];
+    const c = asContent(m, rows.length - i > 6);
+    if (used + c.length > BUDGET && out.length >= 2) {
+      omitidos = i + 1;
+      break;
+    }
+    used += c.length;
+    out.unshift({ role: m.role, content: c });
+  }
+  if (out.length && out[0].role === "assistant") out.shift(); // que arranque con el vecino
+  if (current) out.push(current);
+  return { messages: out, omitidos };
+}
+
+function systemFor(reclamo, omitidos) {
+  const hoy = new Date().toLocaleDateString("es-AR", { timeZone: "America/Argentina/Buenos_Aires", day: "2-digit", month: "2-digit", year: "numeric" });
+  const d = reclamo.datos || {};
+  const datos = ["tipo", "entidad", "monto", "fecha", "operacion"].map((k) => `${k}: ${d[k] || "—"}`).join(" · ");
+  return `${SYSTEM}
+
+Fecha de hoy: ${hoy}. Si el vecino da una fecha sin año, asumí el año en curso o el anterior según corresponda; no inventes años.
+
+MEMORIA DEL CASO (de los turnos anteriores; actualizala en "memoria"):
+${reclamo.memoria || "(todavía vacía: es el primer mensaje del vecino)"}
+
+DATOS YA EXTRAÍDOS: ${datos}${omitidos ? `\n(Hay ${omitidos} mensajes anteriores que no van completos: lo importante está en la memoria.)` : ""}`;
+}
+
+const SIN_VALOR = (v) => !v || /^(-|—|n\/?a|desconocido|no informado)$/i.test(String(v).trim());
+
 export async function chat(user, body) {
-  await checkQuota(user.id);
   const provider = getProvider();
-  const messages = await buildMessages(body?.messages, body?.attachment, provider);
+  const text = String(body?.text ?? "").replace(/[\u0000-\u0008\u000B\u000C\u000E-\u001F\u007F]/g, "").trim().slice(0, MAX_TEXT);
+  const att = body?.attachment?.dataUrl ? body.attachment : null;
+  const reintentar = Boolean(body?.reintentar);
+  // Sin mensaje del vecino no se llama a la IA (el saludo es fijo, lo muestra la app).
+  if (!text && !att && !reintentar) throw new HttpError(400, "mensaje_vacio", "Escribí, grabá un audio o subí el resumen.");
+  await checkQuota(user.id);
+  const reclamo = await borradorParaChat(user.id, body?.reclamoId);
+  const read = att ? await readAttachment(att, provider) : null;
+
+  let current = null;
+  let userMsgId = null;
+  const previos = await mensajes(reclamo.id);
+  if (reintentar) {
+    const last = previos[previos.length - 1];
+    if (!last || last.role !== "user") throw new HttpError(409, "nada_que_reintentar", "No hay nada pendiente de respuesta.");
+  } else {
+    const audio = body?.audio && Number(body.audio.seg) > 0 ? { seg: Math.min(600, Math.round(Number(body.audio.seg))) } : null;
+    const kind = read ? "archivo" : audio ? "audio" : "texto";
+    const adjunto = read ? read.meta : audio;
+    userMsgId = (
+      await q("INSERT INTO reclamo_mensajes (reclamo_id, role, kind, text, adjunto, contexto) VALUES ($1,'user',$2,$3,$4,$5) RETURNING id", [
+        reclamo.id, kind, text, adjunto, read?.contexto || null,
+      ])
+    ).rows[0].id;
+    const t = kind === "audio" ? `(audio transcripto) ${text}` : text;
+    current = read ? { role: "user", content: [...(t ? [{ type: "text", text: t }] : []), ...read.parts] } : { role: "user", content: t };
+  }
+  const { messages, omitidos } = buildContext(previos, current);
+
   try {
-    const r = await provider.chatJson({ system: SYSTEM, messages, schema: SCHEMA });
+    const r = await provider.chatJson({ system: systemFor(reclamo, omitidos), messages, schema: SCHEMA });
     const { json, usage } = r;
     await logUse(user.id, "chat", provider, true, usage, r);
     providerOk();
-    const datos = json.datos || {};
-    if (!TIPO_IDS.includes(datos.tipo)) datos.tipo = "";
-    const listo = Boolean(json.listo && datos.tipo && datos.entidad && datos.monto);
     const used = r.provider || provider.name;
-    console.log(`[chat] respondió ${used} (${r.model || provider.model})`);
+    const model = r.model || provider.model;
+    console.log(`[chat] respondió ${used} (${model}) · reclamo ${reclamo.id} · ${messages.length} msjs en contexto${omitidos ? `, ${omitidos} resumidos` : ""}`);
+    // Datos: lo nuevo pisa a lo viejo sólo si trae un valor real.
+    const nuevos = json.datos || {};
+    const datos = { ...reclamo.datos };
+    for (const k of ["tipo", "entidad", "monto", "fecha", "operacion"]) if (!SIN_VALOR(nuevos[k])) datos[k] = String(nuevos[k]).slice(0, 120);
+    if (datos.tipo && !TIPO_IDS.includes(datos.tipo)) delete datos.tipo;
+    const listo = Boolean(json.listo && datos.tipo && datos.entidad && datos.monto);
+    const memoria = String(json.memoria || "").trim().slice(0, 2500) || reclamo.memoria;
+    const reply = String(json.reply || "").slice(0, 1200);
+    const nota = String(json.nota_adjunto || "").trim().slice(0, 1500);
+    if (read && userMsgId && nota) {
+      await q("UPDATE reclamo_mensajes SET contexto = CASE WHEN coalesce(contexto,'') = '' THEN $2 ELSE $2 || E'\\n---\\n' || contexto END WHERE id = $1", [userMsgId, nota]);
+    }
+    await q("INSERT INTO reclamo_mensajes (reclamo_id, role, kind, text, provider, model) VALUES ($1,'assistant','texto',$2,$3,$4)", [reclamo.id, reply, used, model]);
+    await q("UPDATE reclamos SET datos = $2, memoria = $3, listo = $4, updated_at = now() WHERE id = $1", [reclamo.id, datos, memoria, listo]);
     const ia = { xai: "Grok", local: "Qwen", openai: "OpenAI" }[used] || "IA";
-    return { reply: String(json.reply || "").slice(0, 1200), pedir: json.pedir || "nada", listo, datos, provider: used, ia };
+    return {
+      reply, pedir: json.pedir || "nada", listo,
+      datos: { tipo: datos.tipo || "", entidad: datos.entidad || "", monto: datos.monto || "", fecha: datos.fecha || "", operacion: datos.operacion || "" },
+      provider: used, ia, reclamo: { dbId: Number(reclamo.id), id: nro(reclamo) },
+    };
   } catch (e) {
     await logUse(user.id, "chat", provider, false, null);
+    // Un adjunto que no se pudo leer no queda guardado (sin el archivo no se puede reintentar): se vuelve a subir.
+    if (read && userMsgId) await q("DELETE FROM reclamo_mensajes WHERE id = $1", [userMsgId]).catch(() => {});
     if (e instanceof HttpError) throw e;
     console.error("[chat]", e.status || "", e.code || "", e.message);
-    throw providerError(e, "chat");
+    const err = providerError(e, "chat");
+    err.extra = { ...(err.extra || {}), reclamo: { dbId: Number(reclamo.id), id: nro(reclamo) }, reintentable: !read };
+    throw err;
   }
 }
 

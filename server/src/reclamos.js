@@ -1,0 +1,180 @@
+// Reclamos persistidos: cada conversación del chat es un reclamo del vecino (borrador hasta presentarlo).
+// TODA consulta filtra por user_id de la sesión: un usuario nunca ve ni toca reclamos ajenos.
+import { q } from "./db.js";
+import { HttpError } from "./auth.js";
+
+export const nro = (r) => `RE-${new Date(r.created_at).getFullYear()}-${String(r.id).padStart(4, "0")}`;
+const IA = { xai: "Grok", local: "Qwen", openai: "OpenAI" };
+
+const ESTADO = { borrador: "SIN TERMINAR", en_tramite: "EN TRÁMITE", respondido: "RESPONDIDO", escalado: "ESCALADO AL BCRA", resuelto: "RESUELTO" };
+
+// Días hábiles (lun-vie) desde la presentación.
+function diasHabiles(desde) {
+  if (!desde) return null;
+  let d = new Date(desde), n = 0;
+  const hoy = new Date();
+  while (d < hoy) {
+    d = new Date(d.getTime() + 86400000);
+    if (d <= hoy && d.getDay() % 6 !== 0) n++;
+  }
+  return n;
+}
+
+function parseMonto(s) {
+  if (typeof s === "number") return s;
+  const n = Number(String(s || "").replace(/[^\d,.-]/g, "").replaceAll(".", "").replace(",", "."));
+  return Number.isFinite(n) ? n : 0;
+}
+
+// Forma que usan las pantallas (ticket / seguimiento / bandeja).
+export function ticket(r) {
+  const d = r.datos || {};
+  const dias = diasHabiles(r.presentado_at);
+  const vencido = r.estado === "en_tramite" && dias != null && dias > 10;
+  return {
+    id: nro(r),
+    dbId: Number(r.id),
+    fecha: new Date(r.presentado_at || r.created_at).toISOString().slice(0, 10),
+    entidad: d.entidad || "—",
+    categoria: d.categoria || "BANCOS",
+    tipo: d.tipo || "",
+    operacion: d.operacion || "",
+    monto: parseMonto(d.monto),
+    estado: vencido ? "VENCIDO" : ESTADO[r.estado] || r.estado,
+    borrador: r.estado === "borrador",
+    activa: Boolean(r.activa),
+    diasPlazo: r.estado === "borrador" ? null : dias,
+    vencido,
+    resumen: d.resumen || String(r.memoria || "").split("\n")[0].replace(/^[-•*]\s*/, "").slice(0, 160),
+    fundamento: r.fundamento || "",
+    actualizado: r.updated_at,
+  };
+}
+
+export function mensajeOut(m) {
+  return {
+    from: m.role === "assistant" ? "ia" : "user",
+    kind: m.kind,
+    text: m.text,
+    adjunto: m.adjunto || null,
+    por: m.provider ? IA[m.provider] || "IA" : null,
+    at: m.created_at,
+  };
+}
+
+export async function reclamoDe(userId, id) {
+  const r = (await q("SELECT * FROM reclamos WHERE id = $1 AND user_id = $2", [id, userId])).rows[0];
+  if (!r) throw new HttpError(404, "reclamo_no_encontrado", "No encontré ese reclamo.");
+  return r;
+}
+
+export async function activa(userId) {
+  return (await q("SELECT * FROM reclamos WHERE user_id = $1 AND activa", [userId])).rows[0] || null;
+}
+
+// Devuelve el borrador donde se escribe: el pedido (si es del usuario y sigue abierto) o el activo; si no hay, crea uno.
+export async function borradorParaChat(userId, id) {
+  if (id) {
+    const r = await reclamoDe(userId, Number(id));
+    if (r.estado !== "borrador") throw new HttpError(409, "reclamo_cerrado", "Ese reclamo ya fue presentado. Empezá una conversación nueva.");
+    if (!r.activa) await activar(userId, r.id);
+    return r;
+  }
+  const a = await activa(userId);
+  if (a && a.estado === "borrador") return a;
+  if (a) await q("UPDATE reclamos SET activa = false WHERE id = $1", [a.id]);
+  return (await q("INSERT INTO reclamos (user_id) VALUES ($1) RETURNING *", [userId])).rows[0];
+}
+
+async function activar(userId, id) {
+  await q("UPDATE reclamos SET activa = false WHERE user_id = $1 AND activa AND id <> $2", [userId, id]);
+  await q("UPDATE reclamos SET activa = true WHERE id = $1 AND user_id = $2", [id, userId]);
+}
+
+export async function mensajes(reclamoId) {
+  return (await q("SELECT * FROM reclamo_mensajes WHERE reclamo_id = $1 ORDER BY id", [reclamoId])).rows;
+}
+
+// GET /api/conversacion[?id=] → conversación activa (o la pedida, que pasa a ser la activa) con su historial.
+export async function conversacion(user, id) {
+  let r;
+  if (id) {
+    r = await reclamoDe(user.id, Number(id));
+    if (r.estado === "borrador") await activar(user.id, r.id);
+  } else r = await activa(user.id);
+  if (!r) return { reclamo: null, mensajes: [] };
+  const ms = await mensajes(r.id);
+  return { reclamo: { ...ticket(r), datos: r.datos, listo: r.listo }, mensajes: ms.map(mensajeOut) };
+}
+
+// POST /api/conversacion/nueva → la actual queda guardada (en Mis reclamos) y el chat arranca de cero.
+export async function nueva(user) {
+  await q("UPDATE reclamos SET activa = false WHERE user_id = $1 AND activa", [user.id]);
+  // Los borradores sin ningún mensaje no sirven: se borran.
+  await q("DELETE FROM reclamos r WHERE r.user_id = $1 AND r.estado = 'borrador' AND NOT EXISTS (SELECT 1 FROM reclamo_mensajes m WHERE m.reclamo_id = r.id)", [user.id]);
+  return { ok: true };
+}
+
+// GET /api/reclamos → los del vecino (presentados y borradores con mensajes), más recientes primero.
+export async function listar(user) {
+  const rows = (
+    await q(
+      `SELECT r.* FROM reclamos r
+        WHERE r.user_id = $1 AND (r.estado <> 'borrador' OR EXISTS (SELECT 1 FROM reclamo_mensajes m WHERE m.reclamo_id = r.id))
+        ORDER BY r.updated_at DESC LIMIT 200`,
+      [user.id],
+    )
+  ).rows;
+  return { reclamos: rows.map(ticket) };
+}
+
+// POST /api/reclamos/presentar {id, datos, fundamento} → el borrador pasa a EN TRÁMITE.
+export async function presentar(user, body) {
+  const r = await reclamoDe(user.id, Number(body?.id));
+  if (r.estado !== "borrador") return { reclamo: ticket(r) };
+  const d = body?.datos || {};
+  const limpio = (v, n = 120) => String(v ?? "").slice(0, n);
+  const datos = {
+    ...r.datos,
+    tipo: limpio(d.tipo, 60), entidad: limpio(d.entidad), monto: limpio(d.monto, 40), fecha: limpio(d.fecha, 20),
+    operacion: limpio(d.operacion, 60), categoria: limpio(d.categoria, 30) || r.datos.categoria || "BANCOS", resumen: limpio(d.resumen, 200),
+  };
+  if (!datos.entidad || !datos.tipo) throw new HttpError(400, "datos_incompletos", "Faltan datos del reclamo (entidad y tipo).");
+  const u = (
+    await q(
+      `UPDATE reclamos SET estado = 'en_tramite', activa = false, datos = $3, fundamento = $4, presentado_at = now(), updated_at = now()
+        WHERE id = $1 AND user_id = $2 RETURNING *`,
+      [r.id, user.id, datos, limpio(body?.fundamento, 4000)],
+    )
+  ).rows[0];
+  return { reclamo: ticket(u) };
+}
+
+// Panel de entidad: sólo reclamos presentados contra SU entidad (users.entidad_id = nombre o id de la entidad).
+// Sin entidad vinculada no ve nada. Del vecino sólo se muestran iniciales del reclamo, nunca DNI ni email.
+export async function casosEntidad(user) {
+  if (!user.entidad_id) return { casos: [], vinculada: false };
+  const rows = (
+    await q(
+      `SELECT r.* FROM reclamos r
+        WHERE r.estado <> 'borrador' AND coalesce(r.datos->>'entidad','') <> ''
+          AND (lower(r.datos->>'entidad') LIKE '%' || lower($1) || '%' OR lower($1) LIKE '%' || lower(r.datos->>'entidad') || '%')
+        ORDER BY r.presentado_at DESC LIMIT 500`,
+      [user.entidad_id],
+    )
+  ).rows;
+  const casos = rows.map((r) => {
+    const t = ticket(r);
+    return {
+      ...t,
+      id: `CA-${t.id.slice(3)}`,
+      reclamo: t.id,
+      fecha: r.presentado_at,
+      triage: t.vencido ? "rojo" : "amarillo",
+      ciudadano: { iniciales: "VC", distrito: "Rosario", edad: null, ingreso: "—" },
+      puntaje: { total: 0, reglas: [] },
+      patron: false,
+    };
+  });
+  return { casos, vinculada: true };
+}
