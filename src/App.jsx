@@ -34,7 +34,6 @@ function parseMonto(s) {
 
 export default function App() {
   const [user, setUser] = useState(undefined); // undefined = verificando sesión
-  const [role, setRole] = useState("ciudadano");
   const [dark, setDark] = useState(false);
   const [view, setView] = useState("home");
   const [filtro, setFiltro] = useState("TODOS");
@@ -44,18 +43,29 @@ export default function App() {
   const [currentReclamo, setCurrentReclamo] = useState(null);
   const [currentCaso, setCurrentCaso] = useState(null);
 
+  // El tipo de usuario lo define la sesión (lo valida el servidor); no se cambia desde la UI.
+  const role = user?.role === "entidad" ? "entidad" : "ciudadano";
+
+  const entrar = useCallback((u) => {
+    setUser(u);
+    setView(u?.role === "entidad" ? "bandeja" : "home");
+    setFiltro("TODOS");
+    setDatos(null);
+    setCurrentReclamo(null);
+    setCurrentCaso(null);
+  }, []);
+
   useEffect(() => {
     api
       .me()
-      .then((r) => setUser(r.user))
+      .then((r) => entrar(r.user ?? null))
       .catch(() => setUser(null));
-  }, []);
+  }, [entrar]);
 
   const salir = useCallback(async () => {
     await api.salir().catch(() => {});
     setUser(null);
     setView("home");
-    setRole("ciudadano");
   }, []);
 
   const nroExpediente = useMemo(() => {
@@ -71,26 +81,6 @@ export default function App() {
   const normasActuales = useMemo(
     () => bibliotecaLegal.filter((n) => tipoActual.normas.includes(n.id)),
     [tipoActual],
-  );
-
-  const irACiudadano = useCallback(() => {
-    setRole("ciudadano");
-    setView("home");
-    setFiltro("TODOS");
-    setCurrentCaso(null);
-  }, []);
-
-  const irAEntidad = useCallback(() => {
-    setRole("entidad");
-    setView("bandeja");
-    setFiltro("TODOS");
-    setCurrentReclamo(null);
-    setDatos(null);
-  }, []);
-
-  const handleRole = useCallback(
-    (r) => (r === "ciudadano" ? irACiudadano() : irAEntidad()),
-    [irACiudadano, irAEntidad],
   );
 
   const toggleTheme = useCallback(() => {
@@ -258,14 +248,14 @@ export default function App() {
   if (user === undefined) {
     screen = null;
   } else if (!user) {
-    screen = <Login onLogin={(u) => { setUser(u); setView("home"); }} />;
+    screen = <Login onLogin={entrar} />;
   }
 
   const viewKey = `${user ? "in" : "out"}-${role}-${view}-${currentReclamo?.id || ""}-${currentCaso?.id || ""}-${filtro}`;
 
   return (
-    <div className="shell">
-      <TopBar role={role} onRole={handleRole} dark={dark} onTheme={toggleTheme} user={user} onSalir={salir} />
+    <div className={`shell${user && role === "ciudadano" && view === "chat" ? " shell--chat" : ""}`}>
+      <TopBar dark={dark} onTheme={toggleTheme} user={user} onSalir={salir} />
       <main className="main">
         <div key={viewKey} className="fuse-page-in">
           {screen}

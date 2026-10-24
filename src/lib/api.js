@@ -24,8 +24,8 @@ async function call(path, { method = "GET", body } = {}) {
 
 export const api = {
   me: () => call("/auth/me"),
-  pedirCodigo: (dni, email) => call("/auth/request", { method: "POST", body: { dni, email } }),
-  verificar: (dni, code) => call("/auth/verify", { method: "POST", body: { dni, code } }),
+  pedirCodigo: (role, doc, email) => call("/auth/request", { method: "POST", body: { role, doc, email } }),
+  verificar: (role, doc, code) => call("/auth/verify", { method: "POST", body: { role, doc, code } }),
   salir: () => call("/auth/logout", { method: "POST" }),
   chat: (messages, attachment) => call("/chat", { method: "POST", body: { messages, attachment } }),
   transcribir: (dataUrl) => call("/transcribe", { method: "POST", body: { dataUrl } }),

@@ -1109,14 +1109,49 @@
 .chat {
   display: flex;
   flex-direction: column;
-  min-height: calc(100dvh - 140px);
+  flex: 1;
+  min-height: 0;
 }
 
 .chat__msgs {
+  flex: 1;
+  min-height: 0;
+  overflow-y: auto;
+  overscroll-behavior: contain;
+  -webkit-overflow-scrolling: touch;
   display: grid;
+  align-content: start;
   gap: var(--space-md);
   padding-bottom: var(--space-md);
 }
+
+/* Pantalla de chat: el shell ocupa exactamente el alto visible (100dvh; con
+   interactive-widget=resizes-content se achica cuando aparece el teclado). */
+.shell--chat {
+  height: 100vh;
+  height: 100dvh;
+  min-height: 0;
+  overflow: hidden;
+}
+.shell--chat .main { min-height: 0; overflow: hidden; padding-bottom: calc(58px + env(safe-area-inset-bottom)); }
+.shell--chat .main > .fuse-page-in {
+  flex: 1;
+  min-height: 0;
+  display: flex;
+  flex-direction: column;
+}
+.view--chat {
+  flex: 1;
+  min-height: 0;
+  display: flex;
+  flex-direction: column;
+  padding-bottom: var(--space-sm);
+}
+.view--chat > h1 { margin-bottom: var(--space-sm); }
+/* con el teclado abierto escondemos el bottom nav para dejar lugar a los mensajes */
+.shell--chat:has(.chat__input:focus) .bottomnav { display: none; }
+.shell--chat:has(.chat__input:focus) .main { padding-bottom: env(safe-area-inset-bottom); }
+.bubble { white-space: pre-wrap; }
 
 .bubble {
   max-width: 86%;
@@ -1201,10 +1236,10 @@
 /* respuestas rápidas (chips dentro del chat) */
 .qr { display: flex; flex-wrap: wrap; gap: var(--space-xs); }
 
-/* barra de escritura — fija sobre el bottom nav */
+/* barra de escritura — siempre abajo del chat, justo arriba del bottom nav
+   (el layout del chat es una columna de alto fijo: los mensajes scrollean, la barra no) */
 .chat__bar {
-  position: sticky;
-  bottom: calc(76px + env(safe-area-inset-bottom));
+  flex-shrink: 0;
   display: flex;
   align-items: flex-end;
   gap: var(--space-xs);
@@ -1212,7 +1247,7 @@
   border: var(--rule-fine) solid var(--color-rule);
   border-top: 2px solid var(--color-ink);
   padding: var(--space-sm);
-  margin-top: var(--space-lg);
+  margin-top: var(--space-sm);
 }
 .chat__input {
   flex: 1;
@@ -1584,7 +1619,6 @@
   .bottomnav__item { flex: 0 1 160px; }
 
   .bubble { max-width: 72%; }
-  .chat__bar { bottom: 76px; }
   .patrones-grid { display: grid; grid-template-columns: repeat(3, 1fr); gap: var(--space-md); }
   .patron { margin-bottom: 0; }
 }
@@ -1612,4 +1646,26 @@
 .bubble__tag { display: flex; align-items: center; gap: 4px; font-size: 0.7rem; letter-spacing: 0.1em; opacity: 0.75; margin-bottom: 2px; }
 .icon-btn.is-recording { color: var(--color-accent); border-color: var(--color-accent); animation: rec-pulse 1s ease-in-out infinite; }
 @keyframes rec-pulse { 50% { opacity: 0.45; } }
-.topbar__user { font-size: 0.7rem; letter-spacing: 0.08em; color: var(--color-neutral); }
+.topbar__user {
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+  font-family: var(--font-mono);
+  font-size: var(--text-xs);
+  letter-spacing: 0.06em;
+  color: var(--color-ink);
+  border: var(--rule-fine) solid var(--color-rule);
+  padding: 0 var(--space-sm);
+  height: 34px;
+  white-space: nowrap;
+}
+.login__tipo { margin: var(--space-sm) 0 var(--space-md); }
+.login__tipo button { flex: 1; padding: var(--space-sm); font-size: var(--text-sm, 0.85rem); }
+
+/* top bar compacta en celulares: marca + documento + tema + salir entran en 360px */
+@media (max-width: 440px) {
+  .topbar { padding: var(--space-xs) var(--space-sm); gap: var(--space-xs); }
+  .topbar__brand { font-size: 1.05rem; gap: 0.35em; }
+  .topbar__user { padding: 0 6px; font-size: 10px; letter-spacing: 0.02em; }
+  .topbar__user svg { display: none; }
+}

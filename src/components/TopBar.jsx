@@ -1,6 +1,8 @@
 import Icon from "./Icon.jsx";
+import { formatDoc } from "../lib/doc.js";
 
-export default function TopBar({ role, onRole, dark, onTheme, user, onSalir }) {
+export default function TopBar({ dark, onTheme, user, onSalir }) {
+  const docLabel = user ? `${user.docType || (user.role === "entidad" ? "CUIT" : "DNI")} ${formatDoc(user.doc, user.role)}` : "";
   return (
     <header className="topbar">
       <div className="topbar__brand">
@@ -9,22 +11,10 @@ export default function TopBar({ role, onRole, dark, onTheme, user, onSalir }) {
       <span className="topbar__tag">MESA DE ENTRADA — ROSARIO</span>
       <div className="topbar__controls">
         {user && (
-        <div className="role-switch" role="tablist" aria-label="Perfil">
-          <button
-            type="button"
-            className={role === "ciudadano" ? "is-active" : ""}
-            onClick={() => onRole("ciudadano")}
-          >
-            CIUDADANO
-          </button>
-          <button
-            type="button"
-            className={role === "entidad" ? "is-active" : ""}
-            onClick={() => onRole("entidad")}
-          >
-            ENTIDAD
-          </button>
-        </div>
+          <span className="topbar__user" title={user.role === "entidad" ? "Entidad" : "Ciudadano"}>
+            <Icon name={user.role === "entidad" ? "building" : "user"} size={13} />
+            {docLabel}
+          </span>
         )}
         <button
           type="button"
@@ -36,7 +26,7 @@ export default function TopBar({ role, onRole, dark, onTheme, user, onSalir }) {
           <Icon name={dark ? "sun" : "moon"} size={15} />
         </button>
         {user && (
-          <button type="button" className="icon-btn" onClick={onSalir} aria-label="Salir" title={`Salir (DNI ${user.dni})`}>
+          <button type="button" className="icon-btn" onClick={onSalir} aria-label="Cerrar sesión" title="Cerrar sesión">
             <Icon name="x" size={15} />
           </button>
         )}

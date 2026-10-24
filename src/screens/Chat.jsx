@@ -7,6 +7,21 @@ import { api, fileToDataUrl } from "../lib/api.js";
 
 const MAX_MB = 8;
 
+// Todo se renderiza como TEXTO (React escapa HTML; nunca usamos dangerouslySetInnerHTML).
+// Además sacamos caracteres de control y de override bidi que sirven para engañar visualmente.
+const limpio = (t) =>
+  String(t ?? "")
+    .replace(/[\u0000-\u0008\u000B\u000C\u000E-\u001F\u007F\u202A-\u202E\u2066-\u2069]/g, "")
+    .slice(0, 4000);
+
+// Sólo previsualizamos imágenes locales en data: URL de tipos seguros (nada de SVG ni URLs remotas).
+const previewSegura = (u) => (/^data:image\/(png|jpe?g|webp|gif);base64,[a-z0-9+/=]+$/i.test(u) ? u : null);
+
+const ERRORES = {
+  ia_sin_credito: "El asistente está fuera de servicio por un momento. Ya lo estamos resolviendo; probá más tarde.",
+  rol_no_permitido: "El chat de reclamos es sólo para ciudadanos. Entrá con tu DNI.",
+};
+
 function metaHora() {
   return new Date().toLocaleTimeString("es-AR", { hour: "2-digit", minute: "2-digit" });
 }
@@ -24,14 +39,16 @@ export default function Chat({ nroExpediente, onConfirmar, onSinSesion }) {
   const [listo, setListo] = useState(false);
   const [error, setError] = useState("");
   const [grabando, setGrabando] = useState(false);
-  const endRef = useRef(null);
+  const msgsBoxRef = useRef(null);
   const busy = useRef(false);
   const msgsRef = useRef([]);
   const recRef = useRef(null);
   const started = useRef(false);
 
+  // Auto-scroll dentro de la lista de mensajes (la barra de escritura queda fija abajo).
   useEffect(() => {
-    endRef.current?.scrollIntoView({ behavior: "smooth", block: "end" });
+    const box = msgsBoxRef.current;
+    if (box) box.scrollTo({ top: box.scrollHeight, behavior: "smooth" });
   }, [msgs, typing, listo, error]);
 
   const push = useCallback((m) => {
@@ -48,12 +65,12 @@ export default function Chat({ nroExpediente, onConfirmar, onSinSesion }) {
       setError("");
       try {
         const r = await api.chat(historial, adjunto);
-        push({ from: "ia", text: r.reply });
+        push({ from: "ia", text: limpio(r.reply) });
         if (r.datos) setDatos(r.datos);
         setListo(Boolean(r.listo));
       } catch (e) {
         if (e.status === 401) return onSinSesion?.();
-        setError(e.message);
+        setError(ERRORES[e.code] || e.message || "La IA no respondió. Probá de nuevo en un momento.");
       } finally {
         setTyping(false);
         busy.current = false;
@@ -73,7 +90,7 @@ export default function Chat({ nroExpediente, onConfirmar, onSinSesion }) {
     const t = input.trim();
     if (!t || busy.current) return;
     setInput("");
-    const next = push({ from: "user", text: t });
+    const next = push({ from: "user", text: limpio(t) });
     preguntar(aHistorial(next));
   };
 
@@ -84,7 +101,7 @@ export default function Chat({ nroExpediente, onConfirmar, onSinSesion }) {
     busy.current = true;
     try {
       const dataUrl = await fileToDataUrl(file);
-      const next = push({ from: "user", file: { name: file.name, isPdf: file.type === "application/pdf", preview: file.type.startsWith("image/") ? dataUrl : null } });
+      const next = push({ from: "user", file: { name: file.name, isPdf: file.type === "application/pdf", preview: previewSegura(dataUrl) } });
       await preguntar(aHistorial(next), { name: file.name, dataUrl });
     } catch {
       busy.current = false;
@@ -118,13 +135,13 @@ export default function Chat({ nroExpediente, onConfirmar, onSinSesion }) {
           const dataUrl = await fileToDataUrl(blob);
           const { text } = await api.transcribir(dataUrl);
           if (!text) throw new Error("No se entendió el audio. Probá de nuevo o escribilo.");
-          const next = push({ from: "user", text, audio: seg });
+          const next = push({ from: "user", text: limpio(text), audio: seg });
           await preguntar(aHistorial(next));
         } catch (e) {
           if (e.status === 401) return onSinSesion?.();
           setTyping(false);
           busy.current = false;
-          setError(e.message);
+          setError(ERRORES[e.code] || e.message);
         }
       };
       recRef.current = rec;
@@ -137,14 +154,14 @@ export default function Chat({ nroExpediente, onConfirmar, onSinSesion }) {
   };
 
   return (
-    <div className="view view--app">
+    <div className="view view--app view--chat">
       <span className="view__kicker">TRÁMITE Nº {nroExpediente}</span>
       <h1>
         CONTAME QUÉ <em>PASÓ</em>
       </h1>
 
       <div className="chat">
-        <div className="chat__msgs" data-fuse-container>
+        <div className="chat__msgs" ref={msgsBoxRef} aria-live="polite" data-fuse-container>
           {msgs.map((m, i) =>
             m.from === "ia" ? (
               <div className="bubble bubble--ia" key={i} data-fuse="fade-up" data-fuse-auto>
@@ -178,8 +195,10 @@ export default function Chat({ nroExpediente, onConfirmar, onSinSesion }) {
           {error && (
             <div className="bubble bubble--log" role="alert">
               <div className="bubble__line--active">{error}</div>
-              {!typing && msgs.length === 0 && (
-                <button type="button" className="btn btn--ghost" onClick={() => preguntar([])}>REINTENTAR</button>
+              {!typing && (msgs.length === 0 || msgs[msgs.length - 1].from === "user") && (
+                <button type="button" className="btn btn--ghost" onClick={() => preguntar(aHistorial(msgsRef.current))}>
+                  REINTENTAR
+                </button>
               )}
             </div>
           )}
@@ -191,10 +210,16 @@ export default function Chat({ nroExpediente, onConfirmar, onSinSesion }) {
               </button>
             </div>
           )}
-          <div ref={endRef} />
         </div>
 
-        <div className="chat__bar">
+        <div
+          className="chat__bar"
+          onMouseDown={(e) => {
+            // Que tocar enviar/mic/adjuntar no saque el foco del input: si no, el teclado se cierra,
+            // el layout salta y el toque se pierde.
+            if (e.target.closest("button, label")) e.preventDefault();
+          }}
+        >
           <button
             type="button"
             className={`icon-btn${grabando ? " is-recording" : ""}`}
@@ -222,6 +247,9 @@ export default function Chat({ nroExpediente, onConfirmar, onSinSesion }) {
             placeholder={grabando ? "Grabando… tocá la X para enviar" : "Escribí tu mensaje…"}
             value={input}
             maxLength={2000}
+            enterKeyHint="send"
+            autoComplete="off"
+            aria-label="Mensaje"
             onChange={(e) => setInput(e.target.value)}
             onKeyDown={(e) => {
               if (e.key === "Enter") {

@@ -18,7 +18,7 @@ Defensor financiero vecinal para Rosario.
   temprana de patrones por entidad con intimación colectiva.
 
 **Estado actual:** el chat del vecino ya usa IA real (vía `server/`, la API propia) y el
-ingreso es con DNI + código por email. El resto de las pantallas (reclamos, bandeja,
+ingreso se elige en el login: **ciudadano** (DNI) o **entidad** (CUIT/CUIL), siempre + código por email; el rol queda en la sesión y lo valida el servidor. El resto de las pantallas (reclamos, bandeja,
 patrones) sigue mostrando data de `src/mock/` hasta conectar la API del BCRA.
 
 **Escalera de reclamo:** entidad → BCRA → Oficina Municipal del Consumidor.
@@ -45,13 +45,15 @@ Node 22 sin framework (deps: `pg`, `nodemailer`).
 | Ruta | Qué hace |
 |---|---|
 | `GET /api/health` | estado de DB e IA |
-| `POST /api/auth/request` | `{dni, email?}` → manda código de 6 dígitos por email (primera vez pide email) |
-| `POST /api/auth/verify` | `{dni, code}` → cookie de sesión httpOnly |
+| `POST /api/auth/request` | `{role: vecino\|entidad, doc, email?}` → manda código de 6 dígitos por email (primera vez pide email). DNI 7–8 dígitos; CUIT/CUIL 11 dígitos con verificador |
+| `POST /api/auth/verify` | `{role, doc, code}` → cookie de sesión httpOnly |
 | `GET /api/auth/me` / `POST /api/auth/logout` | sesión |
 | `POST /api/chat` | historial + adjunto (foto/PDF) → respuesta de la IA + datos extraídos |
 | `POST /api/transcribe` | audio → texto |
 
-- Códigos: 10 min, un solo uso, 5 intentos, guardados como HMAC; límites por DNI e IP.
+- Códigos: 10 min, un solo uso, 5 intentos, guardados como HMAC; límites por usuario (documento + rol) e IP. Un mismo número puede existir como ciudadano y como entidad por separado.
+- Roles en el servidor: `/api/chat` y `/api/transcribe` sólo para ciudadanos (403 `rol_no_permitido`); `/api/entidad/*` sólo para entidades.
+- Errores de IA distinguibles: `ia_sin_credito` (503, la cuenta del proveedor no tiene saldo), `ia_ocupada` (503, rate limit), `ia_config` (503, key inválida), `ia_timeout` (504), `ia_no_disponible` (502). `/api/health` muestra el último estado (`ai.error`).
 - IA: `server/src/ai/` abstrae el proveedor (`AI_PROVIDER=openai` o `local` para un modelo
   compatible con la API de OpenAI, p. ej. Ollama/LM Studio). La clave nunca llega al frontend.
 - Roles en DB: `vecino` / `entidad`.
@@ -68,7 +70,7 @@ Contabo con una llave que sólo puede ejecutar el redeploy (`git pull --ff-only`
 ```
 [repo]/
 ├── goals/        ← Brand direction (brand.md, references.md, constraints.md)
-├── server/       ← API (auth DNI + código, chat IA, transcripción)
+├── server/       ← API (auth DNI/CUIT + código, chat IA, transcripción)
 ├── src/
 │   ├── lib/      ← api.js (cliente de /api)
 │   ├── mock/     ← Provisional data (reclamos, casos, entidades, contenido,
