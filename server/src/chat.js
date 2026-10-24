@@ -171,7 +171,10 @@ const SIN_VALOR = (v) => !v || /^(-|—|n\/?a|desconocido|no informado)$/i.test(
 
 export async function chat(user, body) {
   const provider = getProvider();
-  const text = String(body?.text ?? "").replace(/[\u0000-\u0008\u000B\u000C\u000E-\u001F\u007F]/g, "").trim().slice(0, MAX_TEXT);
+  // Compatibilidad con pestañas abiertas antes de un deploy: la versión anterior de la app mandaba
+  // {messages:[{role,content}]}; se toma el último mensaje del vecino como el mensaje nuevo.
+  const legado = !body?.text && Array.isArray(body?.messages) ? [...body.messages].reverse().find((m) => m?.role === "user") : null;
+  const text = String(body?.text ?? (typeof legado?.content === "string" ? legado.content : "")).replace(/[\u0000-\u0008\u000B\u000C\u000E-\u001F\u007F]/g, "").trim().slice(0, MAX_TEXT);
   const att = body?.attachment?.dataUrl ? body.attachment : null;
   const reintentar = Boolean(body?.reintentar);
   // Sin mensaje del vecino no se llama a la IA (el saludo es fijo, lo muestra la app).

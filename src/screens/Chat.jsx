@@ -192,6 +192,8 @@ export default function Chat({ resumeId, onConfirmar, onSinSesion, onReclamo }) 
   };
 
   const enviarTexto = () => {
+    // Grabando: el botón Enviar corta la grabación y manda el audio (un solo toque).
+    if (grabando) return recRef.current?.stop();
     const t = input.trim();
     if (!t || busy.current) return;
     setInput("");

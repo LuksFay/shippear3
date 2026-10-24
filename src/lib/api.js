@@ -66,5 +66,8 @@ export function miniatura(dataUrl, max = 320) {
 }
 
 // Hora 24 h (es-AR).
-export const hora24 = (d = new Date()) =>
-  new Date(d).toLocaleTimeString("es-AR", { hour: "2-digit", minute: "2-digit", hour12: false });
+// 24 h siempre (algunos navegadores ignoran hour12:false con es-AR y muestran "p. m.").
+export const hora24 = (d = new Date()) => {
+  const x = new Date(d);
+  return `${String(x.getHours()).padStart(2, "0")}:${String(x.getMinutes()).padStart(2, "0")}`;
+};
