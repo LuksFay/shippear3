@@ -1694,3 +1694,6 @@
   .topbar__user { padding: 0 6px; font-size: 10px; letter-spacing: 0.02em; }
   .topbar__user svg { display: none; }
 }
+
+/* Audio mientras se transcribe */
+.bubble--user.is-pending { opacity: .6; font-style: italic; }

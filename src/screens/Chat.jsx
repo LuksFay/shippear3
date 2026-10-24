@@ -22,7 +22,7 @@ const ERRORES = {
   ia_offline: "El asistente está desconectado en este momento. Probá de nuevo en unos minutos.",
   ia_ocupada: "El asistente está muy ocupado. Esperá unos segundos y probá de nuevo.",
   ia_timeout: "El asistente tardó demasiado. Probá de nuevo.",
-  audio_no_disponible: "Por ahora no puedo escuchar audios. Escribime lo que pasó.",
+  audio_no_disponible: "No pude escuchar el audio en este momento. Probá de nuevo o escribilo.",
   solo_fotos: "Por ahora no puedo leer PDF. Mandame una foto o captura del resumen.",
   rol_no_permitido: "El chat de reclamos es sólo para ciudadanos. Entrá con tu DNI.",
 };
@@ -49,7 +49,8 @@ export default function Chat({ nroExpediente, onConfirmar, onSinSesion }) {
   const msgsRef = useRef([]);
   const recRef = useRef(null);
   const started = useRef(false);
-  const sinAudio = useRef(false);
+  const cancelado = useRef(false);
+  const [seg, setSeg] = useState(0);
 
   // Teclado del celular: abierto = input enfocado Y el alto visible bajó bastante respecto del máximo
   // visto. Cuando se cierra (enviar, elegir archivo, botón atrás) el bottom nav vuelve.
@@ -83,10 +84,13 @@ export default function Chat({ nroExpediente, onConfirmar, onSinSesion }) {
     };
   }, []);
 
-  // ¿El modelo actual escucha audios? (el local de Broly todavía no). Evita grabar para nada.
+  // Cronómetro mientras se graba.
   useEffect(() => {
-    api.salud().then((h) => (sinAudio.current = h?.ai?.audio === false)).catch(() => {});
-  }, []);
+    if (!grabando) return setSeg(0);
+    const t0 = Date.now();
+    const id = setInterval(() => setSeg(Math.floor((Date.now() - t0) / 1000)), 250);
+    return () => clearInterval(id);
+  }, [grabando]);
 
   // Auto-scroll dentro de la lista de mensajes (la barra de escritura queda fija abajo).
   useEffect(() => {
@@ -152,48 +156,68 @@ export default function Chat({ nroExpediente, onConfirmar, onSinSesion }) {
     }
   };
 
+  // Formato que soporta el navegador: Chrome/Android/Firefox graban webm/opus; Safari/iOS, mp4 (aac).
+  const mimeGrabacion = () => {
+    const c = ["audio/webm;codecs=opus", "audio/webm", "audio/mp4;codecs=mp4a.40.2", "audio/mp4", "audio/aac", "audio/ogg;codecs=opus"];
+    return c.find((t) => MediaRecorder.isTypeSupported?.(t)) || "";
+  };
+
+  const cancelarAudio = () => {
+    cancelado.current = true;
+    recRef.current?.stop();
+  };
+
   const toggleAudio = async () => {
     if (grabando) {
       recRef.current?.stop();
       return;
     }
     if (busy.current) return;
-    if (sinAudio.current) return setError(ERRORES.audio_no_disponible);
     if (!navigator.mediaDevices?.getUserMedia || typeof MediaRecorder === "undefined")
       return setError("Este navegador no permite grabar audio. Escribí el mensaje.");
+    setError("");
     try {
-      const stream = await navigator.mediaDevices.getUserMedia({ audio: true });
-      const rec = new MediaRecorder(stream);
+      const stream = await navigator.mediaDevices.getUserMedia({ audio: { echoCancellation: true, noiseSuppression: true } });
+      const tipo = mimeGrabacion();
+      const rec = tipo ? new MediaRecorder(stream, { mimeType: tipo }) : new MediaRecorder(stream);
       const chunks = [];
       const inicio = Date.now();
+      cancelado.current = false;
       rec.ondataavailable = (e) => e.data.size && chunks.push(e.data);
       rec.onstop = async () => {
         stream.getTracks().forEach((t) => t.stop());
         setGrabando(false);
-        const blob = new Blob(chunks, { type: rec.mimeType || "audio/webm" });
-        if (blob.size < 1000) return;
-        const seg = Math.round((Date.now() - inicio) / 1000);
+        if (cancelado.current) return;
+        const blob = new Blob(chunks, { type: (rec.mimeType || tipo || "audio/webm").split(";")[0] });
+        const seg = Math.max(1, Math.round((Date.now() - inicio) / 1000));
+        if (blob.size < 1000) return setError("El audio quedó vacío. Tocá el micrófono, hablá y tocá enviar.");
         busy.current = true;
-        setTyping(true);
+        // Burbuja provisoria mientras se transcribe; después se reemplaza por lo que dijo.
+        push({ from: "user", text: "Escuchando tu audio…", audio: seg, pendiente: true });
+        const sacarProvisoria = () => {
+          msgsRef.current = msgsRef.current.filter((m) => !m.pendiente);
+          setMsgs(msgsRef.current);
+        };
         try {
           const dataUrl = await fileToDataUrl(blob);
           const { text } = await api.transcribir(dataUrl);
+          sacarProvisoria();
           if (!text) throw new Error("No se entendió el audio. Probá de nuevo o escribilo.");
           const next = push({ from: "user", text: limpio(text), audio: seg });
           await preguntar(aHistorial(next));
         } catch (e) {
-          if (e.status === 401) return onSinSesion?.();
-          setTyping(false);
+          sacarProvisoria();
           busy.current = false;
+          if (e.status === 401) return onSinSesion?.();
           setError(ERRORES[e.code] || e.message);
         }
       };
       recRef.current = rec;
-      rec.start();
+      rec.start(1000);
       setGrabando(true);
-      setTimeout(() => rec.state === "recording" && rec.stop(), 90_000);
+      setTimeout(() => rec.state === "recording" && rec.stop(), 120_000);
     } catch {
-      setError("No pude usar el micrófono. Revisá el permiso o escribí el mensaje.");
+      setError("No pude usar el micrófono. Revisá el permiso del navegador o escribí el mensaje.");
     }
   };
 
@@ -222,7 +246,7 @@ export default function Chat({ nroExpediente, onConfirmar, onSinSesion }) {
                 <span className="bubble__meta">{m.file.isPdf ? "PDF" : "FOTO"} ENVIADO — {m.time}</span>
               </div>
             ) : (
-              <div className="bubble bubble--user" key={i} data-fuse="fade-up" data-fuse-auto>
+              <div className={`bubble bubble--user${m.pendiente ? " is-pending" : ""}`} key={i} data-fuse="fade-up" data-fuse-auto>
                 {m.audio ? <span className="bubble__tag"><Icon name="mic" size={12} /> AUDIO {m.audio}s</span> : null}
                 {m.text}
                 <span className="bubble__meta">VOS — {m.time}</span>
@@ -268,11 +292,16 @@ export default function Chat({ nroExpediente, onConfirmar, onSinSesion }) {
             type="button"
             className={`icon-btn${grabando ? " is-recording" : ""}`}
             onClick={toggleAudio}
-            aria-label={grabando ? "Terminar audio" : "Mandar audio"}
-            title={grabando ? "Tocá para terminar" : "Mandar audio"}
+            aria-label={grabando ? "Enviar audio" : "Grabar audio"}
+            title={grabando ? "Tocá para enviar el audio" : "Grabar audio"}
           >
-            <Icon name={grabando ? "x" : "mic"} size={17} />
+            <Icon name={grabando ? "send" : "mic"} size={17} />
           </button>
+          {grabando ? (
+            <button type="button" className="icon-btn" onClick={cancelarAudio} aria-label="Cancelar audio" title="Cancelar audio">
+              <Icon name="x" size={17} />
+            </button>
+          ) : (
           <label className="icon-btn" aria-label="Adjuntar resumen" title="Adjuntar foto o PDF" style={{ cursor: "pointer" }}>
             <Icon name="paperclip" size={17} />
             <input
@@ -286,9 +315,10 @@ export default function Chat({ nroExpediente, onConfirmar, onSinSesion }) {
               }}
             />
           </label>
+          )}
           <input
             className="chat__input"
-            placeholder={grabando ? "Grabando… tocá la X para enviar" : "Escribí tu mensaje…"}
+            placeholder={grabando ? `● Grabando ${Math.floor(seg / 60)}:${String(seg % 60).padStart(2, "0")} — tocá enviar` : "Escribí tu mensaje…"}
             value={input}
             maxLength={2000}
             enterKeyHint="send"
