@@ -27,11 +27,14 @@ export default function Patrones({ patrones, contenido, onVolver }) {
         la biblioteca legal.
       </p>
 
+      {patrones.length === 0 && (
+        <p className="view__sub">Por ahora no hay patrones: aparecen cuando hay 3 o más reclamos iguales contra la misma entidad en 30 días.</p>
+      )}
       <div className="patrones-grid" data-fuse-container>
         {patrones.map((p) => (
-          <div className="patron" key={p.entidad} data-fuse="fade-up" data-fuse-auto>
+          <div className="patron" key={`${p.demo}|${p.entidad}|${p.tipo}`} data-fuse="fade-up" data-fuse-auto>
             <div className="patron__head">
-              <span className="patron__entidad">{p.entidad}</span>
+              <span className="patron__entidad">{p.entidad}{p.demo && <span className="ticket__tag-demo">DEMO</span>}</span>
               <Stamp tone={p.gravedad === "ALTA" ? "" : "warn"} rotate="r">
                 {p.gravedad}
               </Stamp>

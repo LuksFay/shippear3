@@ -4,7 +4,8 @@ import { cleanup, migrate, q } from "./db.js";
 import { currentUser, HttpError, logout, publicUser, requestCode, sessionCookie, verifyCode } from "./auth.js";
 import { aiStatus, chat, transcribe } from "./chat.js";
 import { getStt } from "./ai/stt.js";
-import { casosEntidad, conversacion, listar, nueva, presentar } from "./reclamos.js";
+import { casosEntidad, conversacion, demoVecino, listar, nueva, presentar } from "./reclamos.js";
+import { seedDemo } from "./demo.js";
 import { getProvider } from "./ai/index.js";
 
 const MAX_BODY = 12 * 1024 * 1024;
@@ -106,6 +107,7 @@ const routes = {
   "POST /api/reclamos/presentar": async (req, body) => [200, await presentar(await requireUser(req, "vecino"), body)],
   // Panel de la entidad: sólo entidades, y sólo los reclamos presentados contra la entidad vinculada.
   "GET /api/entidad/perfil": async (req) => [200, { user: publicUser(await requireUser(req, "entidad")) }],
+  "GET /api/reclamos/ejemplo": async (req) => [200, await demoVecino(await requireUser(req, "vecino"))],
   "GET /api/entidad/casos": async (req) => [200, await casosEntidad(await requireUser(req, "entidad"))],
 };
 
@@ -127,5 +129,6 @@ const server = http.createServer(async (req, res) => {
 
 assertConfig();
 await migrate();
+if (process.env.DEMO_SEED !== "0") await seedDemo();
 setInterval(() => cleanup().catch(() => {}), 3_600_000).unref();
 server.listen(config.port, () => console.log(`[api] escuchando en :${config.port} (IA: ${getProvider().name}/${getProvider().model})`));

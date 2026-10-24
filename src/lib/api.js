@@ -35,6 +35,7 @@ export const api = {
   reclamos: () => call("/reclamos"),
   presentar: (id, datos, fundamento) => call("/reclamos/presentar", { method: "POST", body: { id, datos, fundamento } }),
   casosEntidad: () => call("/entidad/casos"),
+  ejemplo: () => call("/reclamos/ejemplo"),
   transcribir: (dataUrl) => call("/transcribe", { method: "POST", body: { dataUrl } }),
 };
 

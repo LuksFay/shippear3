@@ -9,7 +9,7 @@
   "scripts": {
     "start": "node src/index.js",
     "dev": "node --watch src/index.js",
-    "check": "node --check src/index.js && node --check src/auth.js && node --check src/db.js && node --check src/mail.js && node --check src/chat.js && node --check src/ai/index.js && node --check src/ai/openaiCompatible.js && node --check src/ai/ollama.js && node --check src/ai/stt.js && node --check src/pdf.js && node --check src/reclamos.js && node --check src/prompt.js"
+    "check": "node --check src/index.js && node --check src/auth.js && node --check src/db.js && node --check src/mail.js && node --check src/chat.js && node --check src/ai/index.js && node --check src/ai/openaiCompatible.js && node --check src/ai/ollama.js && node --check src/ai/stt.js && node --check src/pdf.js && node --check src/reclamos.js && node --check src/demo.js && node --check src/prompt.js"
   },
   "dependencies": {
     "nodemailer": "^7.0.0",

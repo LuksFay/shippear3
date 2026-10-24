@@ -96,6 +96,9 @@ CREATE TABLE IF NOT EXISTS reclamo_mensajes (
   created_at  TIMESTAMPTZ NOT NULL DEFAULT now()
 );
 CREATE INDEX IF NOT EXISTS reclamo_mensajes_idx ON reclamo_mensajes (reclamo_id, id);
+
+-- v4: casos de ejemplo marcados como demo (dueños sin login posible: doc_number "demo-…").
+ALTER TABLE reclamos ADD COLUMN IF NOT EXISTS demo BOOLEAN NOT NULL DEFAULT false;
 `;
 
 export async function migrate() {

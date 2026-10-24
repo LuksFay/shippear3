@@ -19,11 +19,14 @@ function hace(iso) {
   return `HACE ${Math.round(hs / 24)} D`;
 }
 
-export default function Bandeja({ casos, filtros, filtro, onFiltro, onOpenCaso }) {
+export default function Bandeja({ casos, vinculada = true, filtros, filtro, onFiltro, onOpenCaso }) {
   const [filtroInterno, setFiltroInterno] = useState("TODOS");
   const filtroActivo = filtro || filtroInterno;
 
+  const archivo = filtroActivo === "ARCHIVO";
+  const abiertos = useMemo(() => casos.filter((c) => c.estado !== "RESUELTO"), [casos]);
   const stats = useMemo(() => {
+    const casos = abiertos;
     const vencidos = casos.filter((c) => c.vencido).length;
     const verdes = casos.filter((c) => c.triage === "verde").length;
     const amarillos = casos.filter((c) => c.triage === "amarillo").length;
@@ -34,15 +37,14 @@ export default function Bandeja({ casos, filtros, filtro, onFiltro, onOpenCaso }
       { num: rojos, label: "ROJOS · PRESENCIAL", cls: "rojo" },
       { num: vencidos, label: "VENCIDOS SIN RESPUESTA", cls: "vencido" },
     ];
-  }, [casos]);
+  }, [abiertos]);
 
   const filtrados = useMemo(() => {
-    let lista = [...casos];
+    let lista = archivo ? casos.filter((c) => c.estado === "RESUELTO") : [...abiertos];
     if (filtroActivo === "VERDES") lista = lista.filter((c) => c.triage === "verde");
     else if (filtroActivo === "AMARILLOS") lista = lista.filter((c) => c.triage === "amarillo");
     else if (filtroActivo === "ROJOS") lista = lista.filter((c) => c.triage === "rojo");
     else if (filtroActivo === "VENCIDOS") lista = lista.filter((c) => c.vencido);
-    else if (filtroActivo === "ARCHIVO") lista = lista.filter((c) => c.estado === "RESUELTO");
     const peso = { rojo: 0, amarillo: 1, verde: 2 };
     return lista.sort(
       (a, b) =>
@@ -50,7 +52,7 @@ export default function Bandeja({ casos, filtros, filtro, onFiltro, onOpenCaso }
         peso[a.triage] - peso[b.triage] ||
         new Date(b.fecha) - new Date(a.fecha),
     );
-  }, [casos, filtroActivo]);
+  }, [casos, abiertos, archivo, filtroActivo]);
 
   const aplicar = (f) => {
     setFiltroInterno(f);
@@ -61,13 +63,19 @@ export default function Bandeja({ casos, filtros, filtro, onFiltro, onOpenCaso }
     <div className="view view--wide">
       <span className="view__kicker">OFICINA DEL CONSUMIDOR — ROSARIO</span>
       <h1>
-        BANDEJA DE <em>ENTRADA</em>
+        {archivo ? <>ARCHIVO DE <em>CASOS</em></> : <>BANDEJA DE <em>ENTRADA</em></>}
       </h1>
       <p className="view__sub">
         Triage automático: verde para autoservicio, amarillo para revisión de un
         empleado, rojo para atención presencial. Prioridad por reglas configurables,
         no por IA.
       </p>
+      {!vinculada && (
+        <div className="aviso-demo" role="note">
+          <strong>Modo demostración.</strong> Esta cuenta todavía no está habilitada como Oficina: ves sólo casos de
+          ejemplo (marcados DEMO). Los reclamos reales aparecen cuando la oficina habilita tu CUIT.
+        </div>
+      )}
 
       <div className="stats stats--4" data-fuse-container>
         {stats.map((s) => (
@@ -122,6 +130,7 @@ export default function Bandeja({ casos, filtros, filtro, onFiltro, onOpenCaso }
               <div className="caso-head">
                 <span className="caso-iniciales">{c.ciudadano.iniciales}</span>
                 <span className="caso-cat">{c.categoria}</span>
+                {c.demo && <span className="caso-cat caso-cat--demo">DEMO</span>}
                 {c.patron && (
                   <span className="caso-cat" style={{ color: "var(--color-accent)", borderColor: "var(--color-accent)" }}>
                     PATRÓN
@@ -162,7 +171,7 @@ export default function Bandeja({ casos, filtros, filtro, onFiltro, onOpenCaso }
 
       {filtrados.length === 0 && (
         <p className="view__sub" data-fuse="fade-up" data-fuse-auto>
-          Sin casos en esta bandeja. Todo al día.
+          {archivo ? "Todavía no hay casos resueltos en el archivo." : "Sin casos en esta bandeja. Todo al día."}
         </p>
       )}
     </div>

@@ -28,6 +28,7 @@ export default function App() {
   // Sólo datos reales de la base: reclamos del vecino y casos de la entidad vinculada.
   const [reclamos, setReclamos] = useState([]);
   const [casos, setCasos] = useState([]);
+  const [vinculada, setVinculada] = useState(true);
   const [chatReclamo, setChatReclamo] = useState(null); // { dbId, id } de la conversación abierta
   const [resumeId, setResumeId] = useState(null); // borrador a retomar desde Mis reclamos
   const [chatKey, setChatKey] = useState(0);
@@ -86,7 +87,7 @@ export default function App() {
     api.reclamos().then((r) => setReclamos(r.reclamos || [])).catch(() => {});
   }, []);
   const cargarCasos = useCallback(() => {
-    api.casosEntidad().then((r) => setCasos(r.casos || [])).catch(() => {});
+    api.casosEntidad().then((r) => { setCasos(r.casos || []); setVinculada(r.vinculada !== false); }).catch(() => {});
   }, []);
 
   useEffect(() => {
@@ -97,14 +98,20 @@ export default function App() {
 
   // Patrones calculados de los casos reales (entidad + tipo, últimos 30 días).
   const patrones = useMemo(() => {
-    const desde = Date.now() - 30 * 86400000;
+    const ahora = Date.now(), mes = 30 * 86400000;
     const g = new Map();
     for (const c of casos) {
-      if (new Date(c.fecha).getTime() < desde) continue;
-      const k = `${c.entidad}|${c.tipo}`;
-      g.set(k, { entidad: c.entidad, tipo: c.tipo, casos: (g.get(k)?.casos || 0) + 1, periodo: "30 días", delta: "—" });
+      const t = new Date(c.fecha).getTime();
+      const k = `${c.demo ? 1 : 0}|${c.entidad}|${c.tipo}`;
+      const p = g.get(k) || { entidad: c.entidad, tipo: c.tipo, demo: c.demo, casos: 0, previos: 0, periodo: "ÚLTIMOS 30 DÍAS" };
+      if (t >= ahora - mes) p.casos++;
+      else if (t >= ahora - 2 * mes) p.previos++;
+      g.set(k, p);
     }
-    return [...g.values()].filter((p) => p.casos >= 2).map((p) => ({ ...p, gravedad: p.casos >= 5 ? "ALTA" : "MEDIA" }));
+    return [...g.values()]
+      .filter((p) => p.casos >= 3)
+      .sort((a, b) => b.casos - a.casos)
+      .map((p) => ({ ...p, delta: p.previos ? `${p.casos >= p.previos ? "+" : ""}${Math.round(((p.casos - p.previos) / p.previos) * 100)}%` : "NUEVO", gravedad: p.casos >= 5 ? "ALTA" : "MEDIA" }));
   }, [casos]);
 
   const nuevoReclamo = useCallback(async () => {
@@ -277,6 +284,7 @@ export default function App() {
     screen = (
       <Bandeja
         casos={casos}
+        vinculada={vinculada}
         filtros={contenido.filtros}
         filtro={filtro}
         onFiltro={setFiltro}

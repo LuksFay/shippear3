@@ -76,7 +76,7 @@ export default function CasoDetalle({ caso, contenido, reglas, onVolver, onPatro
             <dl className="doc__dato">
               <dt>CIUDADANO</dt>
               <dd>
-                {caso.ciudadano.iniciales} — {caso.ciudadano.distrito} · {caso.ciudadano.edad} años
+                {caso.ciudadano.iniciales} — {caso.ciudadano.distrito}{caso.ciudadano.edad != null ? ` · ${caso.ciudadano.edad} años` : ""}
               </dd>
             </dl>
             <dl className="doc__dato">

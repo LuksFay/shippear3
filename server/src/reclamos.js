@@ -150,31 +150,80 @@ export async function presentar(user, body) {
   return { reclamo: ticket(u) };
 }
 
-// Panel de entidad: sólo reclamos presentados contra SU entidad (users.entidad_id = nombre o id de la entidad).
-// Sin entidad vinculada no ve nada. Del vecino sólo se muestran iniciales del reclamo, nunca DNI ni email.
+// Puntaje de prioridad con las reglas configurables (src/mock/reglasPrioridad.json). No usa IA.
+function puntaje(t, c, patron) {
+  const reglas = [];
+  if (t.tipo === "cobranza-abusiva" || c.urgencia) reglas.push(["urg-embargo", 15]);
+  if (c.edad >= 65) reglas.push(["vuln-edad", 10]);
+  if (c.ingresoBajo) reglas.push(["vuln-ingreso", 8]);
+  if (c.ingresoMensual && t.monto > 0.3 * c.ingresoMensual) reglas.push(["monto-ingreso", 7]);
+  if (c.centralDeudores >= 3) reglas.push(["central-deudores", 6]);
+  if (patron) reglas.push(["patron", 4]);
+  const total = reglas.reduce((a, [, p]) => a + p, 0);
+  return { total, reglas: reglas.map(([id]) => id) };
+}
+
+const iniciales = (n) => String(n || "").split(/\s+/).filter(Boolean).map((w) => w[0].toUpperCase()).slice(0, 2).join("") || "—";
+
+// Panel de la Oficina del Consumidor (rol "entidad" = la oficina).
+// - Casos demo: siempre visibles, marcados demo.
+// - Reclamos reales: sólo si la cuenta está habilitada (users.entidad_id = 'oficina-rosario' o CUIT en OFICINA_CUITS).
+// Del vecino nunca se muestra DNI ni email: sólo iniciales, distrito y datos declarados.
+export function oficinaHabilitada(user) {
+  const cuits = String(process.env.OFICINA_CUITS || "").split(/[\s,;]+/).filter(Boolean);
+  return user.entidad_id === "oficina-rosario" || cuits.includes(user.doc_number);
+}
+
 export async function casosEntidad(user) {
-  if (!user.entidad_id) return { casos: [], vinculada: false };
+  const real = oficinaHabilitada(user);
   const rows = (
     await q(
       `SELECT r.* FROM reclamos r
-        WHERE r.estado <> 'borrador' AND coalesce(r.datos->>'entidad','') <> ''
-          AND (lower(r.datos->>'entidad') LIKE '%' || lower($1) || '%' OR lower($1) LIKE '%' || lower(r.datos->>'entidad') || '%')
+        WHERE r.estado <> 'borrador' AND (r.demo OR $1)
         ORDER BY r.presentado_at DESC LIMIT 500`,
-      [user.entidad_id],
+      [real],
     )
   ).rows;
+  const desde = Date.now() - 30 * 86400000;
+  const cuenta = new Map();
+  for (const r of rows) {
+    if (new Date(r.presentado_at).getTime() < desde) continue;
+    const k = `${r.demo}|${r.datos.entidad}|${r.datos.tipo}`;
+    cuenta.set(k, (cuenta.get(k) || 0) + 1);
+  }
   const casos = rows.map((r) => {
     const t = ticket(r);
+    const c = r.datos.ciudadano || {};
+    const patron = (cuenta.get(`${r.demo}|${r.datos.entidad}|${r.datos.tipo}`) || 0) >= 5;
+    const p = puntaje(t, c, patron);
+    const cerrado = r.estado === "resuelto";
     return {
       ...t,
       id: `CA-${t.id.slice(3)}`,
       reclamo: t.id,
       fecha: r.presentado_at,
-      triage: t.vencido ? "rojo" : "amarillo",
-      ciudadano: { iniciales: "VC", distrito: "Rosario", edad: null, ingreso: "—" },
-      puntaje: { total: 0, reglas: [] },
-      patron: false,
+      demo: r.demo,
+      triage: cerrado ? "verde" : t.vencido || p.total >= 20 ? "rojo" : p.total >= 8 ? "amarillo" : "verde",
+      ciudadano: {
+        iniciales: iniciales(c.nombre),
+        distrito: c.distrito || "Rosario",
+        edad: c.edad ?? null,
+        ingreso: c.ingreso || "No declarado",
+      },
+      puntaje: p,
+      patron,
     };
   });
-  return { casos, vinculada: true };
+  return { casos, vinculada: real };
+}
+
+// Casos de ejemplo de Mirta (vecina demo) para "Ver un ejemplo" en Mis reclamos. Sólo lectura.
+export async function demoVecino() {
+  const rows = (
+    await q(
+      `SELECT r.* FROM reclamos r JOIN users u ON u.id = r.user_id
+        WHERE r.demo AND u.doc_number = 'demo-mirta' ORDER BY r.presentado_at DESC`,
+    )
+  ).rows;
+  return { reclamos: rows.map((r) => ({ ...ticket(r), demo: true })), vecina: "Mirta, 72 años" };
 }
