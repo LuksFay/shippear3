@@ -40,6 +40,7 @@ export const api = {
   casosEntidad: () => call("/entidad/casos"),
   abogados: (datos) => call("/abogados", { method: "POST", body: datos }),
   estudios: () => call("/entidad/abogados"),
+  directorio: (params = {}) => call(`/entidad/directorio?${new URLSearchParams(params)}`),
   ejemplo: () => call("/reclamos/ejemplo"),
   transcribir: (dataUrl) => call("/transcribe", { method: "POST", body: { dataUrl } }),
 };

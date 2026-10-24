@@ -5,7 +5,8 @@ import { getStt } from "./ai/stt.js";
 import { HttpError } from "./auth.js";
 import { SYSTEM, SCHEMA, TIPO_IDS } from "./prompt.js";
 import { readPdf } from "./pdf.js";
-import { borradorParaChat, mensajes, nro } from "./reclamos.js";
+import { borradorParaChat, conDestino, destinoOut, mensajes, nro } from "./reclamos.js";
+import { destinoParaPrompt } from "./entidades.js";
 
 const MAX_HISTORY = 24;
 const MAX_TEXT = 2000;
@@ -164,7 +165,7 @@ Fecha de hoy: ${hoy}. Si el vecino da una fecha sin año, asumí el año en curs
 MEMORIA DEL CASO (de los turnos anteriores; actualizala en "memoria"):
 ${reclamo.memoria || "(todavía vacía: es el primer mensaje del vecino)"}
 
-DATOS YA EXTRAÍDOS: ${datos}${omitidos ? `\n(Hay ${omitidos} mensajes anteriores que no van completos: lo importante está en la memoria.)` : ""}`;
+DATOS YA EXTRAÍDOS: ${datos}${d.destino?.id ? `\n${destinoParaPrompt(d.destino)}` : ""}${omitidos ? `\n(Hay ${omitidos} mensajes anteriores que no van completos: lo importante está en la memoria.)` : ""}`;
 }
 
 const SIN_VALOR = (v) => !v || /^(-|—|n\/?a|desconocido|no informado)$/i.test(String(v).trim());
@@ -213,8 +214,9 @@ export async function chat(user, body) {
     console.log(`[chat] respondió ${used} (${model}) · reclamo ${reclamo.id} · ${messages.length} msjs en contexto${omitidos ? `, ${omitidos} resumidos` : ""}`);
     // Datos: lo nuevo pisa a lo viejo sólo si trae un valor real.
     const nuevos = json.datos || {};
-    const datos = { ...reclamo.datos };
+    let datos = { ...reclamo.datos };
     for (const k of ["tipo", "entidad", "monto", "fecha", "operacion"]) if (!SIN_VALOR(nuevos[k])) datos[k] = String(nuevos[k]).slice(0, 120);
+    datos = await conDestino(datos);
     if (datos.tipo && !TIPO_IDS.includes(datos.tipo)) delete datos.tipo;
     const listo = Boolean(json.listo && datos.tipo && datos.entidad && datos.monto);
     const memoria = String(json.memoria || "").trim().slice(0, 2500) || reclamo.memoria;
@@ -228,7 +230,7 @@ export async function chat(user, body) {
     const ia = { xai: "Grok", local: "Qwen", openai: "OpenAI" }[used] || "IA";
     return {
       reply, pedir: json.pedir || "nada", listo,
-      datos: { tipo: datos.tipo || "", entidad: datos.entidad || "", monto: datos.monto || "", fecha: datos.fecha || "", operacion: datos.operacion || "" },
+      datos: { tipo: datos.tipo || "", entidad: datos.entidad || "", monto: datos.monto || "", fecha: datos.fecha || "", operacion: datos.operacion || "", destino: destinoOut(datos.destino) },
       provider: used, ia, reclamo: { dbId: Number(reclamo.id), id: nro(reclamo) },
     };
   } catch (e) {

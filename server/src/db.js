@@ -140,6 +140,30 @@ CREATE TABLE IF NOT EXISTS abogados_interesados (
   created_at        TIMESTAMPTZ NOT NULL DEFAULT now()
 );
 CREATE INDEX IF NOT EXISTS abogados_ip_idx ON abogados_interesados (ip_hash, created_at);
+
+-- v8: directorio de canales de reclamo de entidades (se carga con server/scripts/entidades-sql.mjs desde un
+-- archivo que NO está en el repo). Sólo se usa para SUGERIR el destino: nunca se envía nada automáticamente.
+CREATE TABLE IF NOT EXISTS entidades_destino (
+  id                  TEXT PRIMARY KEY,
+  nombre              TEXT NOT NULL,
+  denominacion_legal  TEXT,
+  cuit                TEXT,
+  tipo                TEXT NOT NULL CHECK (tipo IN ('banco', 'seguro', 'billetera', 'tarjeta', 'financiera', 'mutual', 'cooperativa', 'credito', 'organismo')),
+  sector              TEXT CHECK (sector IN ('publico', 'privado', 'mixto')),
+  regulador           TEXT,
+  emails              TEXT[] NOT NULL DEFAULT '{}',
+  acepta_email        BOOLEAN NOT NULL DEFAULT false,
+  acepta_email_nota   TEXT,
+  area_contacto       TEXT,
+  url_formulario      TEXT,
+  telefono            TEXT,
+  plazo_respuesta     TEXT,
+  fuente              TEXT,
+  fecha_verificacion  DATE,
+  confianza           TEXT,
+  alias               TEXT[] NOT NULL DEFAULT '{}',
+  updated_at          TIMESTAMPTZ NOT NULL DEFAULT now()
+);
 `;
 
 export async function migrate() {

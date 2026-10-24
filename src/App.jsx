@@ -20,6 +20,7 @@ import Login from "./screens/Login.jsx";
 import Abogados from "./screens/Abogados.jsx";
 import Privacidad from "./screens/Privacidad.jsx";
 import Estudios from "./screens/Estudios.jsx";
+import Directorio from "./screens/Directorio.jsx";
 import { api } from "./lib/api.js";
 
 export default function App() {
@@ -188,8 +189,8 @@ export default function App() {
         if (id === "mis") setView("mis");
         return;
       }
-      if (id === "estudios") {
-        setView("estudios");
+      if (id === "estudios" || id === "directorio") {
+        setView(id);
         return;
       }
       if (id === "patrones") {
@@ -209,8 +210,8 @@ export default function App() {
         : "chat"
       : view === "patrones"
         ? "patrones"
-        : view === "estudios"
-          ? "estudios"
+        : view === "estudios" || view === "directorio"
+          ? view
         : view === "caso"
           ? "bandeja"
           : filtro === "ARCHIVO"
@@ -299,6 +300,8 @@ export default function App() {
         onPatrones={() => setView("patrones")}
       />
     );
+  } else if (view === "directorio") {
+    screen = <Directorio />;
   } else if (view === "estudios") {
     screen = <Estudios />;
   } else if (view === "patrones") {

@@ -1,6 +1,7 @@
 import { useState } from "react";
 import Icon from "../components/Icon.jsx";
 import Stamp from "../components/Stamp.jsx";
+import DestinoSugerido from "../components/DestinoSugerido.jsx";
 
 export default function ConfirmarDatos({ datos, tipos, onConfirmar }) {
   const [d, setD] = useState({ ...datos });
@@ -40,6 +41,7 @@ export default function ConfirmarDatos({ datos, tipos, onConfirmar }) {
             />
           </div>
         ))}
+        {d.entidad === datos.entidad && <DestinoSugerido destino={datos.destino} />}
         <div className="confirm__foot">
           <button
             type="button"

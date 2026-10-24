@@ -2,6 +2,21 @@
 // TODA consulta filtra por user_id de la sesión: un usuario nunca ve ni toca reclamos ajenos.
 import { pool, q } from "./db.js";
 import { HttpError } from "./auth.js";
+import { buscarEntidad } from "./entidades.js";
+
+// Destino sugerido (directorio de entidades). Sólo se muestra y se registra: nunca se envía nada a la entidad.
+export async function conDestino(datos) {
+  if (!datos.entidad) return { ...datos, destino: null };
+  if (datos.destino?.consulta === datos.entidad) return datos;
+  const d = await buscarEntidad(datos.entidad).catch(() => null);
+  return { ...datos, destino: d ? { ...d, consulta: datos.entidad, at: new Date().toISOString() } : { consulta: datos.entidad, id: null } };
+}
+
+const httpUrl = (u) => (/^https?:\/\//i.test(String(u || "")) ? String(u) : null);
+export function destinoOut(d) {
+  if (!d?.id) return null;
+  return { nombre: d.nombre, tipo: d.tipo, email: d.email || null, aceptaEmail: Boolean(d.aceptaEmail), canal: d.canal || null, url: httpUrl(d.url), plazo: d.plazo || null };
+}
 
 export const nro = (r) => `RE-${new Date(r.created_at).getFullYear()}-${String(r.id).padStart(4, "0")}`;
 const IA = { xai: "Grok", local: "Qwen", openai: "OpenAI" };
@@ -51,6 +66,7 @@ export function ticket(r) {
     editado: Boolean(r.editado_at),
     editadoAt: r.editado_at || null,
     fechaHecho: d.fecha || "",
+    destino: destinoOut(d.destino),
   };
 }
 
@@ -143,6 +159,7 @@ export async function presentar(user, body) {
     operacion: limpio(d.operacion, 60), categoria: limpio(d.categoria, 30) || r.datos.categoria || "BANCOS", resumen: limpio(d.resumen, 200),
   };
   if (!datos.entidad || !datos.tipo) throw new HttpError(400, "datos_incompletos", "Faltan datos del reclamo (entidad y tipo).");
+  Object.assign(datos, await conDestino(datos));
   const u = (
     await q(
       `UPDATE reclamos SET estado = 'recibido', activa = false, datos = $3, fundamento = $4, presentado_at = now(), updated_at = now()
@@ -309,6 +326,7 @@ export async function editar(user, body) {
       }
     }
     if (!cambios.length) return { reclamo: ticket(r), cambios: 0 };
+    Object.assign(datos, await conDestino(datos));
     await versionar(c, r, user, "edicion", cambios);
     const u = (
       await c.query("UPDATE reclamos SET datos = $3, editado_at = now(), updated_at = now() WHERE id = $1 AND user_id = $2 RETURNING *", [id, user.id, datos])

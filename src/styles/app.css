@@ -1782,3 +1782,11 @@
 .estudio__meta { color: var(--color-muted); font-size: 0.9rem; }
 .estudio__esp { font-family: var(--font-mono); font-size: 11px; letter-spacing: 0.06em; text-transform: uppercase; }
 .estudio__msj { margin: 4px 0 0; white-space: pre-wrap; font-size: 0.95rem; }
+
+/* Destino sugerido (directorio de entidades) y directorio de la Oficina */
+.destino { border: 1px dashed var(--color-rule-2); padding: var(--space-sm) var(--space-md); margin: var(--space-md) 0; background: var(--color-surface); word-break: break-word; }
+.destino__titulo { font-family: var(--font-mono); font-size: 11px; letter-spacing: 0.08em; color: var(--color-muted); margin-bottom: 4px; }
+.destino p { margin: 0 0 4px; line-height: 1.5; }
+.destino__nota { color: var(--color-muted); font-size: 0.9rem; }
+.directorio__filtros { display: flex; flex-wrap: wrap; gap: var(--space-sm); margin: var(--space-md) 0 var(--space-xs); }
+.directorio__filtros > * { flex: 1 1 220px; text-align: left; }

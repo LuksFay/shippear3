@@ -1,6 +1,7 @@
 import Doc from "../components/Doc.jsx";
 import Icon from "../components/Icon.jsx";
 import GestionReclamo from "../components/GestionReclamo.jsx";
+import DestinoSugerido from "../components/DestinoSugerido.jsx";
 
 export default function Seguimiento({ reclamo, contenido, onVolver, onNuevo, onCambio, onBaja, soloLectura }) {
   const vencido = reclamo.vencido || reclamo.estado === "VENCIDO" || reclamo.estado === "ESCALADO AL BCRA";
@@ -77,6 +78,7 @@ export default function Seguimiento({ reclamo, contenido, onVolver, onNuevo, onC
         })}
       </div>
 
+      <DestinoSugerido destino={reclamo.destino} />
       {!soloLectura && <GestionReclamo reclamo={reclamo} onCambio={onCambio} onBaja={onBaja} />}
 
       <div className="doc__seccion">DOCUMENTO</div>

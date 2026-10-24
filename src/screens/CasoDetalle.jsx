@@ -1,5 +1,6 @@
 import { useState } from "react";
 import Stamp from "../components/Stamp.jsx";
+import DestinoSugerido from "../components/DestinoSugerido.jsx";
 import Barcode from "../components/Barcode.jsx";
 import Icon from "../components/Icon.jsx";
 import Historial from "../components/Historial.jsx";
@@ -100,6 +101,7 @@ export default function CasoDetalle({ caso, contenido, reglas, onVolver, onPatro
 
             <div className="doc__seccion">RESUMEN DEL RECLAMO</div>
             <p className="doc__texto">{caso.resumen}</p>
+            <DestinoSugerido destino={caso.destino} quien="la Oficina, después de revisarlo" />
 
             <div className="doc__seccion">PUNTAJE DE PRIORIDAD (REGLAS, NO IA)</div>
             <div className="puntaje">
