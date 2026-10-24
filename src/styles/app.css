@@ -1661,6 +1661,14 @@
   height: 34px;
   white-space: nowrap;
 }
+.topbar__login {
+  background: var(--color-ink);
+  color: var(--color-surface);
+  border-color: var(--color-ink);
+  cursor: pointer;
+  font-weight: 700;
+}
+.topbar__login:hover { background: var(--color-accent, var(--color-ink)); border-color: var(--color-accent, var(--color-ink)); }
 .login__tipo { margin: var(--space-sm) 0 var(--space-md); }
 .login__tipo button { flex: 1; padding: var(--space-sm); font-size: var(--text-sm, 0.85rem); }
 

@@ -49,14 +49,16 @@ export default function MisReclamos({ reclamos, onNuevo, onOpen, onVolver }) {
         <button type="button" className="btn btn--ghost btn--block" onClick={onNuevo}>
           NUEVO RECLAMO <Icon name="plus" size={14} />
         </button>
-        <button
-          type="button"
-          className="btn btn--block"
-          style={{ marginTop: "0.5rem" }}
-          onClick={onVolver}
-        >
-          VOLVER AL INICIO
-        </button>
+        {onVolver && (
+          <button
+            type="button"
+            className="btn btn--block"
+            style={{ marginTop: "0.5rem" }}
+            onClick={onVolver}
+          >
+            VOLVER
+          </button>
+        )}
       </div>
     </div>
   );

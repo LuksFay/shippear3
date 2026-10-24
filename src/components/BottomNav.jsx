@@ -2,7 +2,6 @@ import Icon from "./Icon.jsx";
 
 const items = {
   ciudadano: [
-    { id: "home", label: "INICIO", icon: "home" },
     { id: "chat", label: "RECLAMAR", icon: "plus" },
     { id: "mis", label: "MIS RECLAMOS", icon: "ticket" },
   ],

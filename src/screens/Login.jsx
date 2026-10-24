@@ -8,8 +8,8 @@ const TIPOS = {
   entidad: { label: "ENTIDAD", doc: "CUIT/CUIL", max: 11, placeholder: "11 números, sin guiones", ayuda: "Entidad: entrás con el CUIT/CUIL para ver la bandeja de reclamos." },
 };
 
-export default function Login({ onLogin }) {
-  const [rol, setRol] = useState("vecino");
+export default function Login({ onLogin, rolInicial = "vecino", onVolver }) {
+  const [rol, setRol] = useState(TIPOS[rolInicial] ? rolInicial : "vecino");
   const [paso, setPaso] = useState("doc");
   const [doc, setDoc] = useState("");
   const [email, setEmail] = useState("");
@@ -130,6 +130,11 @@ export default function Login({ onLogin }) {
               <button type="submit" className="btn btn--primary btn--block btn--lg" disabled={cargando}>
                 {cargando ? "ENVIANDO…" : "PEDIR CÓDIGO"} <Icon name="send" size={15} />
               </button>
+              {onVolver && (
+                <button type="button" className="btn btn--ghost btn--block" onClick={onVolver}>
+                  VOLVER AL INICIO
+                </button>
+              )}
             </div>
           </form>
         </>

@@ -35,7 +35,8 @@ function parseMonto(s) {
 export default function App() {
   const [user, setUser] = useState(undefined); // undefined = verificando sesión
   const [dark, setDark] = useState(false);
-  const [view, setView] = useState("home");
+  const [view, setView] = useState("chat");
+  const [publico, setPublico] = useState({ pantalla: "landing", rol: "vecino" }); // sin sesión: landing o ingreso
   const [filtro, setFiltro] = useState("TODOS");
   const [reclamos, setReclamos] = useState(reclamosMock);
   const [casos] = useState(casosMock);
@@ -48,7 +49,7 @@ export default function App() {
 
   const entrar = useCallback((u) => {
     setUser(u);
-    setView(u?.role === "entidad" ? "bandeja" : "home");
+    setView(u?.role === "entidad" ? "bandeja" : "chat");
     setFiltro("TODOS");
     setDatos(null);
     setCurrentReclamo(null);
@@ -65,7 +66,13 @@ export default function App() {
   const salir = useCallback(async () => {
     await api.salir().catch(() => {});
     setUser(null);
-    setView("home");
+    setView("chat");
+    setPublico({ pantalla: "landing", rol: "vecino" });
+  }, []);
+
+  const irAlIngreso = useCallback((rol = "vecino") => {
+    setPublico({ pantalla: "login", rol });
+    window.scrollTo(0, 0);
   }, []);
 
   const nroExpediente = useMemo(() => {
@@ -123,7 +130,6 @@ export default function App() {
   const handleNav = useCallback(
     (id) => {
       if (role === "ciudadano") {
-        if (id === "home") setView("home");
         if (id === "chat") setView("chat");
         if (id === "mis") setView("mis");
         return;
@@ -140,11 +146,9 @@ export default function App() {
 
   const navActivo =
     role === "ciudadano"
-      ? view === "home"
-        ? "home"
-        : view === "mis" || view === "seguimiento"
-          ? "mis"
-          : "chat"
+      ? view === "mis" || view === "seguimiento"
+        ? "mis"
+        : "chat"
       : view === "patrones"
         ? "patrones"
         : view === "caso"
@@ -161,7 +165,7 @@ export default function App() {
           <Chat
             nroExpediente={nroExpediente}
             onConfirmar={(d) => { setDatos(d); setView("confirmar"); }}
-            onSinSesion={() => setUser(null)}
+            onSinSesion={() => { setUser(null); irAlIngreso("vecino"); }}
           />
         );
         break;
@@ -206,18 +210,15 @@ export default function App() {
             reclamos={reclamos}
             onNuevo={() => setView("chat")}
             onOpen={(r) => { setCurrentReclamo(r); setView("seguimiento"); }}
-            onVolver={() => setView("home")}
           />
         );
         break;
       default:
         screen = (
-          <Home
-            contenido={contenido}
-            reclamos={reclamos}
-            onNuevo={() => setView("chat")}
-            onVerMis={() => setView("mis")}
-            onOpen={() => setView("mis")}
+          <Chat
+            nroExpediente={nroExpediente}
+            onConfirmar={(d) => { setDatos(d); setView("confirmar"); }}
+            onSinSesion={() => { setUser(null); irAlIngreso("vecino"); }}
           />
         );
     }
@@ -248,14 +249,28 @@ export default function App() {
   if (user === undefined) {
     screen = null;
   } else if (!user) {
-    screen = <Login onLogin={entrar} />;
+    // Sin sesión: la landing (lo que antes era INICIO) y desde ahí el ingreso.
+    screen =
+      publico.pantalla === "login" ? (
+        <Login key={publico.rol} rolInicial={publico.rol} onLogin={entrar} onVolver={() => setPublico({ pantalla: "landing", rol: "vecino" })} />
+      ) : (
+        <Home
+          publico
+          contenido={contenido}
+          reclamos={reclamos}
+          onNuevo={() => irAlIngreso("vecino")}
+          onVerMis={() => irAlIngreso("vecino")}
+          onEntidad={() => irAlIngreso("entidad")}
+          onOpen={() => irAlIngreso("vecino")}
+        />
+      );
   }
 
-  const viewKey = `${user ? "in" : "out"}-${role}-${view}-${currentReclamo?.id || ""}-${currentCaso?.id || ""}-${filtro}`;
+  const viewKey = `${user ? "in" : `out-${publico.pantalla}-${publico.rol}`}-${role}-${view}-${currentReclamo?.id || ""}-${currentCaso?.id || ""}-${filtro}`;
 
   return (
     <div className={`shell${user && role === "ciudadano" && view === "chat" ? " shell--chat" : ""}`}>
-      <TopBar dark={dark} onTheme={toggleTheme} user={user} onSalir={salir} />
+      <TopBar dark={dark} onTheme={toggleTheme} user={user} onSalir={salir} onIngresar={user === null && publico.pantalla === "landing" ? () => irAlIngreso("vecino") : null} />
       <main className="main">
         <div key={viewKey} className="fuse-page-in">
           {screen}

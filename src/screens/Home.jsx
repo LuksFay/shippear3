@@ -3,7 +3,7 @@ import ReclamoTicket from "../components/ReclamoTicket.jsx";
 import Barcode from "../components/Barcode.jsx";
 import Icon from "../components/Icon.jsx";
 
-export default function Home({ contenido, reclamos, onNuevo, onVerMis, onOpen }) {
+export default function Home({ contenido, reclamos, onNuevo, onVerMis, onOpen, onEntidad }) {
   const { hero, steps } = contenido;
   const ultimos = reclamos.slice(0, 2);
   return (
@@ -32,6 +32,11 @@ export default function Home({ contenido, reclamos, onNuevo, onVerMis, onOpen })
           <button type="button" className="btn btn--lg" onClick={onVerMis}>
             MIS RECLAMOS
           </button>
+          {onEntidad && (
+            <button type="button" className="btn btn--ghost btn--lg" onClick={onEntidad}>
+              SOY ENTIDAD <Icon name="building" size={16} />
+            </button>
+          )}
         </div>
         <div className="hero__meta" data-fuse="fade-up" data-fuse-auto style={{ "--f-delay": "500ms" }}>
           <span><i />LENGUAJE SIMPLE</span>
@@ -61,7 +66,7 @@ export default function Home({ contenido, reclamos, onNuevo, onVerMis, onOpen })
       <section className="section" aria-label="Últimos reclamos">
         <div className="section__head">
           <h2>ÚLTIMOS RECLAMOS</h2>
-          <span className="section__num">VISTA CIUDADANO</span>
+          <span className="section__num">EJEMPLOS</span>
         </div>
         <div className="list-stack">
           {ultimos.map((r) => (
