@@ -4,9 +4,9 @@ export default function TopBar({ role, onRole, dark, onTheme }) {
   return (
     <header className="topbar">
       <div className="topbar__brand">
-        ship<b>pear</b>
+        reclamá<b>ya</b>
       </div>
-      <span className="topbar__tag">MESA DE ENTRADA</span>
+      <span className="topbar__tag">MESA DE ENTRADA — ROSARIO</span>
       <div className="topbar__controls">
         <div className="role-switch" role="tablist" aria-label="Perfil">
           <button

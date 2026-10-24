@@ -1,0 +1,32 @@
+[
+  {
+    "id": "urg-embargo",
+    "regla": "Urgencia: amenaza de embargo o cobranza abusiva",
+    "puntos": 15
+  },
+  {
+    "id": "vuln-edad",
+    "regla": "Vulnerabilidad: 65 años o más",
+    "puntos": 10
+  },
+  {
+    "id": "vuln-ingreso",
+    "regla": "Vulnerabilidad: ingreso bajo declarado",
+    "puntos": 8
+  },
+  {
+    "id": "monto-ingreso",
+    "regla": "Monto del conflicto mayor al 30% del ingreso mensual",
+    "puntos": 7
+  },
+  {
+    "id": "central-deudores",
+    "regla": "Situación en Central de Deudores (BCRA) igual o mayor a 3",
+    "puntos": 6
+  },
+  {
+    "id": "patron",
+    "regla": "Patrón: 5 o más reclamos iguales contra la misma entidad",
+    "puntos": 4
+  }
+]

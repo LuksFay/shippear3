@@ -3,14 +3,14 @@ import Stamp from "../components/Stamp.jsx";
 import Barcode from "../components/Barcode.jsx";
 import Icon from "../components/Icon.jsx";
 
+const NOW = Date.now();
+
 const estadoTone = {
-  PENDIENTE: "",
-  DERIVADO: "warn",
+  "EN TRÁMITE": "plain",
+  VENCIDO: "",
   RESPONDIDO: "plain",
   RESUELTO: "ok",
 };
-
-const NOW = Date.now();
 
 function hace(iso) {
   const diff = NOW - new Date(iso).getTime();
@@ -24,23 +24,32 @@ export default function Bandeja({ casos, filtros, filtro, onFiltro, onOpenCaso }
   const filtroActivo = filtro || filtroInterno;
 
   const stats = useMemo(() => {
-    const hoy = casos.filter((c) => NOW - new Date(c.fecha).getTime() < 48 * 3600000).length;
-    const urgentes = casos.filter((c) => c.prioridad === "URGENTE" && c.estado === "PENDIENTE").length;
-    const resueltos = casos.filter((c) => c.estado === "RESUELTO").length;
+    const vencidos = casos.filter((c) => c.vencido).length;
+    const verdes = casos.filter((c) => c.triage === "verde").length;
+    const amarillos = casos.filter((c) => c.triage === "amarillo").length;
+    const rojos = casos.filter((c) => c.triage === "rojo").length;
     return [
-      { num: hoy, label: "ENTRANTES 48H" },
-      { num: urgentes, label: "URGENTES" },
-      { num: casos.length - resueltos, label: "PENDIENTES" },
+      { num: verdes, label: "VERDES · AUTOSERVICIO", cls: "verde" },
+      { num: amarillos, label: "AMARILLOS · REVISIÓN", cls: "amarillo" },
+      { num: rojos, label: "ROJOS · PRESENCIAL", cls: "rojo" },
+      { num: vencidos, label: "VENCIDOS SIN RESPUESTA", cls: "vencido" },
     ];
   }, [casos]);
 
   const filtrados = useMemo(() => {
     let lista = [...casos];
-    if (filtroActivo === "URGENTES") lista = lista.filter((c) => c.prioridad === "URGENTE");
+    if (filtroActivo === "VERDES") lista = lista.filter((c) => c.triage === "verde");
+    else if (filtroActivo === "AMARILLOS") lista = lista.filter((c) => c.triage === "amarillo");
+    else if (filtroActivo === "ROJOS") lista = lista.filter((c) => c.triage === "rojo");
+    else if (filtroActivo === "VENCIDOS") lista = lista.filter((c) => c.vencido);
     else if (filtroActivo === "ARCHIVO") lista = lista.filter((c) => c.estado === "RESUELTO");
-    else if (filtroActivo !== "TODOS") lista = lista.filter((c) => c.categoria === filtroActivo);
-    const peso = { URGENTE: 0, NORMAL: 1, BAJA: 2 };
-    return lista.sort((a, b) => peso[a.prioridad] - peso[b.prioridad] || new Date(b.fecha) - new Date(a.fecha));
+    const peso = { rojo: 0, amarillo: 1, verde: 2 };
+    return lista.sort(
+      (a, b) =>
+        (b.vencido - a.vencido) ||
+        peso[a.triage] - peso[b.triage] ||
+        new Date(b.fecha) - new Date(a.fecha),
+    );
   }, [casos, filtroActivo]);
 
   const aplicar = (f) => {
@@ -50,19 +59,23 @@ export default function Bandeja({ casos, filtros, filtro, onFiltro, onOpenCaso }
 
   return (
     <div className="view view--wide">
-      <span className="view__kicker">MESA DE ENTRADA — VISTA ENTIDAD</span>
+      <span className="view__kicker">OFICINA DEL CONSUMIDOR — ROSARIO</span>
       <h1>
         BANDEJA DE <em>ENTRADA</em>
       </h1>
       <p className="view__sub">
-        Casos ordenados por prioridad. Derivá, respondé o resolvé. Cada caso llega con
-        documento leído y fundamento redactado por IA.
+        Triage automático: verde para autoservicio, amarillo para revisión de un
+        empleado, rojo para atención presencial. Prioridad por reglas configurables,
+        no por IA.
       </p>
 
-      <div className="stats" data-fuse-container>
+      <div className="stats stats--4" data-fuse-container>
         {stats.map((s) => (
           <div className="stat" key={s.label} data-fuse="fade-up" data-fuse-auto>
-            <div className="stat__num">{s.num}</div>
+            <div className={`triage triage--${s.cls}`}>
+              <span className="triage__dot" />
+              {s.num}
+            </div>
             <div className="stat__label">{s.label}</div>
           </div>
         ))}
@@ -85,19 +98,23 @@ export default function Bandeja({ casos, filtros, filtro, onFiltro, onOpenCaso }
         {filtrados.map((c) => (
           <article
             key={c.id}
-            className={`ticket ${c.prioridad === "URGENTE" ? "ticket--urgente" : ""} ${
+            className={`ticket ${c.triage === "rojo" ? "ticket--urgente" : ""} ${
               c.estado === "RESUELTO" ? "ticket--resuelto" : ""
             }`}
             data-fuse="fade-up"
             data-fuse-auto
           >
             <div className="ticket__talon">
-              <span>BANDEJA {c.prioridad}</span>
+              <span>BANDEJA {c.triage.toUpperCase()}</span>
             </div>
             <div className="ticket__body">
               <div className="ticket__head">
                 <span className="ticket__id">{c.id}</span>
                 <span className="ticket__date">{hace(c.fecha)}</span>
+                <span className={`triage triage--${c.triage}`}>
+                  <span className="triage__dot" />
+                  {c.triage}
+                </span>
                 <Stamp tone={estadoTone[c.estado]} rotate={c.id.length % 2 ? "l" : "r"}>
                   {c.estado}
                 </Stamp>
@@ -105,11 +122,14 @@ export default function Bandeja({ casos, filtros, filtro, onFiltro, onOpenCaso }
               <div className="caso-head">
                 <span className="caso-iniciales">{c.ciudadano.iniciales}</span>
                 <span className="caso-cat">{c.categoria}</span>
-                {c.prioridad === "URGENTE" && (
-                  <Stamp tone="" rotate="r" data-fuse="popup" data-fuse-auto>
-                    URGENTE
-                  </Stamp>
+                {c.patron && (
+                  <span className="caso-cat" style={{ color: "var(--color-accent)", borderColor: "var(--color-accent)" }}>
+                    PATRÓN
+                  </span>
                 )}
+                <span className="ticket__date">
+                  {c.vencido ? "PLAZO VENCIDO" : `DÍA ${c.diasPlazo}/10`}
+                </span>
               </div>
               <hr className="ticket__perf" />
               <dl className="ticket__row">
@@ -119,10 +139,6 @@ export default function Bandeja({ casos, filtros, filtro, onFiltro, onOpenCaso }
               <dl className="ticket__row">
                 <dt>DISTRITO</dt>
                 <dd>{c.ciudadano.distrito}</dd>
-              </dl>
-              <dl className="ticket__row">
-                <dt>RECLAMO</dt>
-                <dd>{c.reclamo}</dd>
               </dl>
               <p className="ticket__resumen">{c.resumen}</p>
               <div className="case-actions">

@@ -3,12 +3,12 @@ import Icon from "./Icon.jsx";
 const items = {
   ciudadano: [
     { id: "home", label: "INICIO", icon: "home" },
-    { id: "nuevo", label: "NUEVO", icon: "plus" },
-    { id: "mis", label: "RECLAMOS", icon: "ticket" },
+    { id: "chat", label: "RECLAMAR", icon: "plus" },
+    { id: "mis", label: "MIS RECLAMOS", icon: "ticket" },
   ],
   entidad: [
     { id: "bandeja", label: "BANDEJA", icon: "inbox" },
-    { id: "urgentes", label: "URGENTES", icon: "alert" },
+    { id: "patrones", label: "PATRONES", icon: "alert" },
     { id: "archivo", label: "ARCHIVO", icon: "check" },
   ],
 };

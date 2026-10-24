@@ -1,0 +1,26 @@
+[
+  {
+    "entidad": "Delta Banco",
+    "casos": 14,
+    "delta": "+180%",
+    "tipo": "cargo-no-reconocido",
+    "periodo": "7 días",
+    "gravedad": "ALTA"
+  },
+  {
+    "entidad": "Billetera Luma",
+    "casos": 9,
+    "delta": "+120%",
+    "tipo": "servicio-no-solicitado",
+    "periodo": "7 días",
+    "gravedad": "MEDIA"
+  },
+  {
+    "entidad": "Financiera Progreso",
+    "casos": 6,
+    "delta": "+60%",
+    "tipo": "cobranza-abusiva",
+    "periodo": "10 días",
+    "gravedad": "MEDIA"
+  }
+]

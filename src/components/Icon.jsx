@@ -98,6 +98,16 @@ const paths = {
       <path d="M9 12 H15 M9 16 H15" />
     </>
   ),
+  mic: (
+    <>
+      <path d="M12 3 A4 4 0 0 0 8 7 V12 A4 4 0 0 0 12 16 A4 4 0 0 0 16 12 V7 A4 4 0 0 0 12 3 Z" />
+      <path d="M5.5 12 A6.5 6.5 0 0 0 18.5 12" />
+      <path d="M12 18 V21" />
+    </>
+  ),
+  paperclip: (
+    <path d="M20 12.5 L11.5 21 A5.5 5.5 0 0 1 3.7 13.2 L13.5 3.4 A3.8 3.8 0 0 1 18.9 8.8 L9.7 18 A2 2 0 0 1 6.9 15.2 L15.5 6.6" />
+  ),
 };
 
 export default function Icon({ name, size = 20, ...rest }) {

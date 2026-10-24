@@ -1,0 +1,38 @@
+[
+  {
+    "id": "cargo-no-reconocido",
+    "nombre": "Cargo o cobro no reconocido",
+    "derecho": "Podés impugnar el cargo y no te lo pueden cobrar mientras se investiga. En tarjeta, el aviso de impugnación suspende el pago (Ley 25.065).",
+    "normas": ["ley-25065", "ley-24240", "bcra-pusf"]
+  },
+  {
+    "id": "servicio-no-solicitado",
+    "nombre": "Seguro o servicio no solicitado",
+    "derecho": "Lo que no pediste, no lo pagás. Y si fue contratado por internet, la baja se hace por el mismo canal, con botón visible (Res. 316/2018).",
+    "normas": ["ley-24240", "res-316", "ccyc"]
+  },
+  {
+    "id": "tasa-abusiva",
+    "nombre": "Tasa o costo abusivo en un préstamo",
+    "derecho": "Las cláusulas abusivas se tienen por no convenidas. Los jueces pueden reducir los intereses (CCyC, art. 771) y el BCRA fija topes y transparencia.",
+    "normas": ["ccyc", "bcra-tasas", "ley-24240"]
+  },
+  {
+    "id": "debito-no-baja",
+    "nombre": "Débito automático que no se puede dar de baja",
+    "derecho": "Dar de baja un débito es un derecho: se pide y se hace. El BCRA obliga a las entidades a procesar la baja sin trabas.",
+    "normas": ["res-316", "bcra-pusf", "ley-24240"]
+  },
+  {
+    "id": "cobranza-abusiva",
+    "nombre": "Cobranza abusiva",
+    "derecho": "Nadie puede hostigarte por una deuda: tenés garantizado el trato digno y equitativo (Ley 24.240, art. 8 bis y CCyC, arts. 1097/1098).",
+    "normas": ["ley-24240", "ley-26361", "ccyc"]
+  },
+  {
+    "id": "deuda-mal-informada",
+    "nombre": "Deuda mal informada en la Central de Deudores",
+    "derecho": "Podés pedir la rectificación en 5 días hábiles. La información se borra a los 5 años de la mora y a los 2 si pagaste (Ley 25.326, art. 26).",
+    "normas": ["ley-25326", "dec-1558", "bcra-deudores"]
+  }
+]

@@ -2,9 +2,9 @@ import Stamp from "./Stamp.jsx";
 import Barcode from "./Barcode.jsx";
 
 const tonePorEstado = {
-  "EN TRÁMITE": "",
-  PENDIENTE: "",
-  DERIVADO: "warn",
+  "EN TRÁMITE": "plain",
+  VENCIDO: "",
+  "ESCALADO AL BCRA": "warn",
   RESPONDIDO: "plain",
   RESUELTO: "ok",
 };
@@ -16,9 +16,10 @@ export default function ReclamoTicket({ reclamo, onOpen, tag }) {
     currency: "ARS",
     maximumFractionDigits: 0,
   });
+  const plazo = reclamo.diasPlazo != null ? `DÍA ${reclamo.diasPlazo}/10` : null;
   return (
     <article
-      className={`ticket ${reclamo.prioridad === "URGENTE" ? "ticket--urgente" : ""} ${
+      className={`ticket ${reclamo.triage === "rojo" ? "ticket--urgente" : ""} ${
         reclamo.estado === "RESUELTO" ? "ticket--resuelto" : ""
       }`}
       data-fuse="fade-up"
@@ -52,7 +53,7 @@ export default function ReclamoTicket({ reclamo, onOpen, tag }) {
           <Barcode />
           {onOpen && (
             <button type="button" className="btn btn--ghost" onClick={() => onOpen(reclamo)}>
-              VER DETALLE
+              {plazo || "VER DETALLE"}
             </button>
           )}
         </div>

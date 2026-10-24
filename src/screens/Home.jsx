@@ -17,7 +17,7 @@ export default function Home({ contenido, reclamos, onNuevo, onVerMis, onOpen })
           <span className="hero__line hero__line--accent">{hero.titleBottom}</span>
         </h1>
         <div className="hero__claim" data-fuse="fade-up" data-fuse-auto style={{ "--f-delay": "200ms" }}>
-          <span className="hero__claim-word">RECLAMO</span>
+          <span className="hero__claim-word">{hero.claimWord}</span>
           <Stamp size="xl" rotate="r" data-fuse="popup" data-fuse-auto>
             {hero.stamp}
           </Stamp>
@@ -27,16 +27,16 @@ export default function Home({ contenido, reclamos, onNuevo, onVerMis, onOpen })
         </p>
         <div className="hero__actions" data-fuse="fade-up" data-fuse-auto style={{ "--f-delay": "400ms" }}>
           <button type="button" className="btn btn--primary btn--lg" onClick={onNuevo}>
-            NUEVO RECLAMO <Icon name="arrowRight" size={16} />
+            EMPEZAR MI RECLAMO <Icon name="arrowRight" size={16} />
           </button>
           <button type="button" className="btn btn--lg" onClick={onVerMis}>
             MIS RECLAMOS
           </button>
         </div>
         <div className="hero__meta" data-fuse="fade-up" data-fuse-auto style={{ "--f-delay": "500ms" }}>
-          <span><i />SIN FORMULARIOS</span>
-          <span><i />ANÁLISIS CON IA</span>
-          <span><i />SEGUIMIENTO EN VIVO</span>
+          <span><i />LENGUAJE SIMPLE</span>
+          <span><i />NORMAS OFICIALES</span>
+          <span><i />PLAZOS BCRA</span>
         </div>
       </section>
 

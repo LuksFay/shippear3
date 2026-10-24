@@ -3,18 +3,31 @@ import contenido from "./mock/contenido.json";
 import entidades from "./mock/entidades.json";
 import reclamosMock from "./mock/reclamos.json";
 import casosMock from "./mock/casos.json";
+import tiposConflicto from "./mock/tiposConflicto.json";
+import bibliotecaLegal from "./mock/bibliotecaLegal.json";
+import reglasPrioridad from "./mock/reglasPrioridad.json";
+import patronesMock from "./mock/patrones.json";
 import TopBar from "./components/TopBar.jsx";
 import BottomNav from "./components/BottomNav.jsx";
 import Home from "./screens/Home.jsx";
-import NuevoReclamo from "./screens/NuevoReclamo.jsx";
-import Analizando from "./screens/Analizando.jsx";
+import Chat from "./screens/Chat.jsx";
+import ConfirmarDatos from "./screens/ConfirmarDatos.jsx";
+import Derechos from "./screens/Derechos.jsx";
 import ReclamoListo from "./screens/ReclamoListo.jsx";
+import Seguimiento from "./screens/Seguimiento.jsx";
 import MisReclamos from "./screens/MisReclamos.jsx";
 import Bandeja from "./screens/Bandeja.jsx";
 import CasoDetalle from "./screens/CasoDetalle.jsx";
+import Patrones from "./screens/Patrones.jsx";
 
 function hoy() {
   return new Date().toISOString().slice(0, 10);
+}
+
+function parseMonto(s) {
+  if (typeof s === "number") return s;
+  const n = Number(String(s).replaceAll(".", "").replace(",", "."));
+  return Number.isFinite(n) ? n : 0;
 }
 
 export default function App() {
@@ -24,14 +37,24 @@ export default function App() {
   const [filtro, setFiltro] = useState("TODOS");
   const [reclamos, setReclamos] = useState(reclamosMock);
   const [casos] = useState(casosMock);
+  const [datos, setDatos] = useState(null);
   const [currentReclamo, setCurrentReclamo] = useState(null);
   const [currentCaso, setCurrentCaso] = useState(null);
 
   const nroExpediente = useMemo(() => {
-    const nums = reclamos
-      .map((r) => Number(r.id.split("-").pop()) || 0);
+    const nums = reclamos.map((r) => Number(r.id.split("-").pop()) || 0);
     return `RE-2026-${String(Math.max(0, ...nums) + 1).padStart(4, "0")}`;
   }, [reclamos]);
+
+  const tipoActual = useMemo(
+    () => tiposConflicto.find((t) => t.id === datos?.tipo) || tiposConflicto[0],
+    [datos],
+  );
+
+  const normasActuales = useMemo(
+    () => bibliotecaLegal.filter((n) => tipoActual.normas.includes(n.id)),
+    [tipoActual],
+  );
 
   const irACiudadano = useCallback(() => {
     setRole("ciudadano");
@@ -45,6 +68,7 @@ export default function App() {
     setView("bandeja");
     setFiltro("TODOS");
     setCurrentReclamo(null);
+    setDatos(null);
   }, []);
 
   const handleRole = useCallback(
@@ -62,39 +86,47 @@ export default function App() {
     });
   }, []);
 
-  const handleAnalizar = useCallback(
-    ({ entidadId, nota }) => {
-      const entidad = entidades.find((e) => e.id === entidadId);
-      const reclamo = {
-        id: nroExpediente,
-        fecha: hoy(),
-        entidad: entidad?.nombre || "Entidad",
-        categoria: entidad?.categoria || "Servicios",
-        monto: 48200,
-        estado: "EN TRÁMITE",
-        resumen: nota?.trim()
-          ? nota.trim()
-          : "Cargo duplicado en factura detectado por IA",
-      };
-      setReclamos((prev) => [reclamo, ...prev]);
-      setCurrentReclamo(reclamo);
-      setView("analizando");
-    },
-    [nroExpediente],
-  );
+  const handleArmar = useCallback(() => {
+    if (!datos) return;
+    const entidad = entidades.find(
+      (e) => e.nombre.toLowerCase() === datos.entidad.toLowerCase(),
+    );
+    const fundamento = `${tipoActual.derecho} Normativa: ${normasActuales
+      .map((n) => `${n.nombre} (${n.articulos})`)
+      .join("; ")}.`;
+    const reclamo = {
+      id: nroExpediente,
+      fecha: hoy(),
+      entidad: datos.entidad,
+      categoria: entidad?.categoria || "BANCOS",
+      tipo: datos.tipo,
+      operacion: datos.operacion,
+      monto: parseMonto(datos.monto),
+      estado: "EN TRÁMITE",
+      diasPlazo: 1,
+      vencido: false,
+      resumen: tipoActual.nombre,
+      fundamento,
+    };
+    setReclamos((prev) => [reclamo, ...prev]);
+    setCurrentReclamo(reclamo);
+    setView("listo");
+  }, [datos, tipoActual, normasActuales, nroExpediente]);
 
   const handleNav = useCallback(
     (id) => {
       if (role === "ciudadano") {
         if (id === "home") setView("home");
-        if (id === "nuevo") setView("nuevo");
+        if (id === "chat") setView("chat");
         if (id === "mis") setView("mis");
         return;
       }
+      if (id === "patrones") {
+        setView("patrones");
+        return;
+      }
       setView("bandeja");
-      if (id === "urgentes") setFiltro("URGENTES");
-      if (id === "archivo") setFiltro("ARCHIVO");
-      if (id === "bandeja") setFiltro("TODOS");
+      setFiltro(id === "archivo" ? "ARCHIVO" : "TODOS");
     },
     [role],
   );
@@ -103,13 +135,13 @@ export default function App() {
     role === "ciudadano"
       ? view === "home"
         ? "home"
-        : view === "nuevo" || view === "analizando" || view === "listo"
-          ? "nuevo"
-          : "mis"
-      : view === "caso"
-        ? "bandeja"
-        : filtro === "URGENTES"
-          ? "urgentes"
+        : view === "mis" || view === "seguimiento"
+          ? "mis"
+          : "chat"
+      : view === "patrones"
+        ? "patrones"
+        : view === "caso"
+          ? "bandeja"
           : filtro === "ARCHIVO"
             ? "archivo"
             : "bandeja";
@@ -117,31 +149,41 @@ export default function App() {
   let screen = null;
   if (role === "ciudadano") {
     switch (view) {
-      case "nuevo":
+      case "chat":
+        screen = <Chat contenido={contenido} nroExpediente={nroExpediente} onConfirmar={(d) => { setDatos(d); setView("confirmar"); }} />;
+        break;
+      case "confirmar":
+        screen = datos ? (
+          <ConfirmarDatos datos={datos} tipos={tiposConflicto} onConfirmar={(d) => { setDatos(d); setView("derechos"); }} />
+        ) : null;
+        break;
+      case "derechos":
         screen = (
-          <NuevoReclamo
-            entidades={entidades}
-            nroExpediente={nroExpediente}
-            onAnalizar={handleAnalizar}
+          <Derechos
+            tipo={tipoActual}
+            normas={normasActuales}
+            contenido={contenido}
+            onArmar={handleArmar}
           />
         );
-        break;
-      case "analizando":
-        screen = currentReclamo ? (
-          <Analizando
-            analisis={contenido.analisis}
-            reclamo={currentReclamo}
-            onDone={() => setView("listo")}
-          />
-        ) : null;
         break;
       case "listo":
         screen = currentReclamo ? (
           <ReclamoListo
             reclamo={currentReclamo}
             contenido={contenido}
-            onVerEstado={() => setView("mis")}
-            onNuevo={() => setView("nuevo")}
+            onSeguimiento={() => setView("seguimiento")}
+            onNuevo={() => setView("chat")}
+          />
+        ) : null;
+        break;
+      case "seguimiento":
+        screen = currentReclamo ? (
+          <Seguimiento
+            reclamo={currentReclamo}
+            contenido={contenido}
+            onVolver={() => setView("mis")}
+            onNuevo={() => setView("chat")}
           />
         ) : null;
         break;
@@ -149,8 +191,8 @@ export default function App() {
         screen = (
           <MisReclamos
             reclamos={reclamos}
-            contenido={contenido}
-            onNuevo={() => setView("nuevo")}
+            onNuevo={() => setView("chat")}
+            onOpen={(r) => { setCurrentReclamo(r); setView("seguimiento"); }}
             onVolver={() => setView("home")}
           />
         );
@@ -160,32 +202,34 @@ export default function App() {
           <Home
             contenido={contenido}
             reclamos={reclamos}
-            onNuevo={() => setView("nuevo")}
+            onNuevo={() => setView("chat")}
             onVerMis={() => setView("mis")}
             onOpen={() => setView("mis")}
           />
         );
     }
+  } else if (view === "caso" && currentCaso) {
+    screen = (
+      <CasoDetalle
+        caso={currentCaso}
+        contenido={contenido}
+        reglas={reglasPrioridad}
+        onVolver={() => setView("bandeja")}
+        onPatrones={() => setView("patrones")}
+      />
+    );
+  } else if (view === "patrones") {
+    screen = <Patrones patrones={patronesMock} contenido={contenido} onVolver={() => setView("bandeja")} />;
   } else {
-    screen =
-      view === "caso" && currentCaso ? (
-        <CasoDetalle
-          caso={currentCaso}
-          contenido={contenido}
-          onVolver={() => setView("bandeja")}
-        />
-      ) : (
-        <Bandeja
-          casos={casos}
-          filtros={contenido.filtros}
-          filtro={filtro}
-          onFiltro={setFiltro}
-          onOpenCaso={(c) => {
-            setCurrentCaso(c);
-            setView("caso");
-          }}
-        />
-      );
+    screen = (
+      <Bandeja
+        casos={casos}
+        filtros={contenido.filtros}
+        filtro={filtro}
+        onFiltro={setFiltro}
+        onOpenCaso={(c) => { setCurrentCaso(c); setView("caso"); }}
+      />
+    );
   }
 
   const viewKey = `${role}-${view}-${currentReclamo?.id || ""}-${currentCaso?.id || ""}-${filtro}`;

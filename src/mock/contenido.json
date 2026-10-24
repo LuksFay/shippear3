@@ -1,52 +1,65 @@
 {
-  "motto": "Foto. Análisis. Reclamo derivado. Nada más.",
+  "motto": "Te cobraron algo que no pediste. Contanos. La ley está de tu lado.",
   "hero": {
-    "label": "MESA DE ENTRADA DIGITAL",
-    "titleTop": "SUBÍ LA FOTO.",
-    "titleBottom": "RECLAMO",
-    "stamp": "LISTO",
-    "sub": "Una foto de tu factura o recibo alcanza. La IA detecta el problema, redacta el reclamo y lo deriva a la entidad responsable. Sin formularios."
+    "label": "OFICINA DEL CONSUMIDOR — ROSARIO",
+    "titleTop": "TU PLATA",
+    "titleBottom": "VALE.",
+    "stamp": "YA",
+    "claimWord": "RECLAMÁ",
+    "sub": "Conflictos con bancos, tarjetas y billeteras virtuales. Contanos qué pasó, subí una foto o PDF del resumen y la app arma el reclamo con la norma oficial. Te acompañamos hasta que te devuelvan la plata."
   },
   "steps": [
     {
       "num": "01",
-      "titulo": "FOTO",
-      "texto": "Sacale una foto a la factura o recibo con el problema. De frente, sin reflejos."
+      "titulo": "CONTÁ",
+      "texto": "Un chat como el de WhatsApp. Escribí o mandá un audio contando qué te pasó con el banco, la tarjeta o la billetera."
     },
     {
       "num": "02",
-      "titulo": "ANÁLISIS",
-      "texto": "La IA lee el documento, detecta el cargo o error y arma el fundamento del reclamo."
+      "titulo": "SUBÍ",
+      "texto": "Foto o PDF del resumen. La IA extrae entidad, monto, fecha y operación. Vos confirmás los datos."
     },
     {
       "num": "03",
-      "titulo": "DERIVACIÓN",
-      "texto": "El reclamo queda sellado y derivado a la entidad responsable. Vos seguís el estado en vivo."
+      "titulo": "RECLAMÁ",
+      "texto": "Reclamo listo con tus derechos y la norma oficial. Seguimos el plazo de 10 días hábiles del BCRA y escalamos si no responden."
     }
   ],
-  "analisis": {
-    "steps": [
-      { "id": 1, "accion": "LEYENDO DOCUMENTO", "detalle": "OCR — factura n° 0042-8821", "tiempo": 1400 },
-      { "id": 2, "accion": "DETECTANDO PROBLEMA", "detalle": "cargo duplicado — facturación", "tiempo": 1800 },
-      { "id": 3, "accion": "REDACTANDO RECLAMO", "detalle": "fundamento y derivación", "tiempo": 1600 }
+  "chat": {
+    "saludo": "Hola. Contame qué te pasó con el banco, la tarjeta o la billetera. Escribí o mandá un audio.",
+    "pedidoResumen": "Bien. Ahora subí una foto o el PDF del resumen donde aparece el cargo o el problema.",
+    "leyendo": [
+      "> leyendo el resumen...",
+      "> extrayendo entidad, monto, fecha y operación...",
+      "> clasificando conflicto..."
     ],
-    "lineas": [
-      "> escaneando factura 0042-8821...",
-      "> monto total: $48.200,00",
-      "> cargo duplicado detectado: $12.400,00",
-      "> entidad: EDELUZ S.A. — categoría: servicios",
-      "> redactando fundamento...",
-      "> derivando a defensa del consumidor..."
-    ]
+    "confirmar": "La IA leyó tu resumen. Revisá estos datos y confirmá. Si hay algo mal, tocá y corregilo."
   },
+  "derechos": {
+    "intro": "Estos son tus derechos para este caso, en lenguaje simple. Tocá la norma para abrir el texto oficial."
+  },
+  "plazo": {
+    "total": 10,
+    "nota": "La entidad tiene 10 días hábiles para responder desde que recibe el reclamo (BCRA). Si vence sin respuesta, armamos el reclamo ante el BCRA."
+  },
+  "escalera": [
+    { "paso": 1, "titulo": "ENTIDAD", "detalle": "Reclamo enviado. Plazo: 10 días hábiles." },
+    { "paso": 2, "titulo": "BCRA", "detalle": "Si no responden, se escala el reclamo al Banco Central." },
+    { "paso": 3, "titulo": "OFICINA DEL CONSUMIDOR", "detalle": "Casos complejos: atención presencial en la oficina." }
+  ],
   "reclamoListo": {
     "titulo": "TU RECLAMO ESTÁ SELLADO",
-    "nota": "DERIVADO A: DIRECCIÓN DE DEFENSA DEL CONSUMIDOR",
-    "fundamento": "Cargo duplicado en factura de servicio. El importe de $12.400,00 fue facturado dos veces en el período 09/2026 sin contraprestación, configurando un cobro indebido en los términos del art. 42 de la Constitución Nacional y la Ley 24.240 de Defensa del Consumidor."
+    "nota": "LISTO PARA ENVIAR A LA ENTIDAD — PLAZO: 10 DÍAS HÁBILES (BCRA)",
+    "fundamento": "El cargo impugnado no fue autorizado por el consumidor. La entidad debe acreditar la operación y responder en el plazo legal (BCRA, texto ordenado de Protección de los Usuarios de Servicios Financieros; Ley 24.240, arts. 35 y 37)."
   },
+  "avisoLegal": "Reclamá Ya no reemplaza el asesoramiento legal. En los casos rojos, la Oficina del Consumidor te atiende en persona.",
   "bandeja": {
     "titulo": "BANDEJA DE ENTRADA",
-    "sub": "Casos ordenados por prioridad. Derivá, respondé o resolvé."
+    "sub": "Casos con triage automático: verde para autoservicio, amarillo para revisión de un empleado, rojo para atención presencial. La prioridad se calcula con reglas configurables, no con IA."
   },
-  "filtros": ["TODOS", "URGENTES", "BANCOS", "SERVICIOS", "TELECOM", "MUNICIPAL", "ARCHIVO"]
+  "filtros": ["TODOS", "VERDES", "AMARILLOS", "ROJOS", "VENCIDOS", "ARCHIVO"],
+  "intimacion": {
+    "titulo": "NOTA DE INTIMACIÓN COLECTIVA",
+    "cuerpo": "Ante {n} reclamos del tipo «{tipo}» registrados contra {entidad} en {periodo}, esta Oficina intima a {entidad} a cesar la conducta cuestionada en el plazo de 5 días hábiles, bajo apercibimiento de denuncia ante los organismos competentes (Ley 24.240, art. 52). La intimación se funda en el patrón detectado y la biblioteca legal validada."
+  }
 }

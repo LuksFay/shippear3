@@ -55,7 +55,7 @@ export default function Doc({ reclamo, contenido }) {
       <p className="doc__texto">{reclamo.resumen}.</p>
 
       <div className="doc__seccion">FUNDAMENTO</div>
-      <p className="doc__texto">{fundamento}</p>
+      <p className="doc__texto">{reclamo.fundamento || fundamento}</p>
 
       <div className="doc__sello">
         <Stamp size="xl" data-fuse="popup" data-fuse-auto>

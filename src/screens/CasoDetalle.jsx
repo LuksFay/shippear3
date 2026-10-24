@@ -12,7 +12,7 @@ function fechaCorta(iso) {
   });
 }
 
-export default function CasoDetalle({ caso, contenido, onVolver }) {
+export default function CasoDetalle({ caso, contenido, reglas, onVolver, onPatrones }) {
   const [resuelto, setResuelto] = useState(caso.estado === "RESUELTO");
   const monto = (caso.monto || 0).toLocaleString("es-AR", {
     style: "currency",
@@ -20,13 +20,23 @@ export default function CasoDetalle({ caso, contenido, onVolver }) {
     maximumFractionDigits: 0,
   });
 
+  const reglasAplicadas = (caso.puntaje?.reglas || [])
+    .map((id) => reglas.find((r) => r.id === id))
+    .filter(Boolean);
+
   const timeline = [
     { label: "RECIBIDO", meta: fechaCorta(caso.fecha), state: "is-done" },
-    { label: "ANALIZADO POR IA", meta: "documento leído — fundamento generado", state: "is-done" },
     {
-      label: resuelto ? "RESUELTO" : "DERIVADO",
-      meta: resuelto ? "caso cerrado" : "a la oficina responsable",
-      state: resuelto ? "is-done" : "is-active",
+      label: "ANALIZADO POR IA",
+      meta: "documento leído — conflicto clasificado — datos confirmados por el vecino",
+      state: "is-done",
+    },
+    {
+      label: caso.vencido ? "PLAZO VENCIDO — SIN RESPUESTA" : resuelto ? "RESUELTO" : "EN TRÁMITE",
+      meta: caso.vencido
+        ? `pasaron ${caso.diasPlazo} días hábiles — escalar al BCRA`
+        : `día ${caso.diasPlazo} de 10 hábiles`,
+      state: caso.vencido ? "is-active" : "is-done",
     },
   ];
 
@@ -52,16 +62,26 @@ export default function CasoDetalle({ caso, contenido, onVolver }) {
                 <div className="doc__titulo">EXPEDIENTE {caso.reclamo}</div>
                 <div className="doc__nro">CASO: {caso.id}</div>
               </div>
-              <Stamp tone={resuelto ? "ok" : ""} size="lg" rotate="r">
-                {resuelto ? "RESUELTO" : caso.estado}
-              </Stamp>
+              <div style={{ display: "grid", gap: "6px", justifyItems: "end" }}>
+                <span className={`triage triage--${caso.triage}`}>
+                  <span className="triage__dot" />
+                  {caso.triage === "verde" ? "AUTOSERVICIO" : caso.triage === "amarillo" ? "REVISIÓN" : "PRESENCIAL"}
+                </span>
+                <Stamp tone={resuelto ? "ok" : ""} rotate="r">
+                  {resuelto ? "RESUELTO" : caso.estado}
+                </Stamp>
+              </div>
             </div>
 
             <dl className="doc__dato">
               <dt>CIUDADANO</dt>
               <dd>
-                {caso.ciudadano.iniciales} — {caso.ciudadano.distrito}
+                {caso.ciudadano.iniciales} — {caso.ciudadano.distrito} · {caso.ciudadano.edad} años
               </dd>
+            </dl>
+            <dl className="doc__dato">
+              <dt>INGRESO DECLARADO</dt>
+              <dd>{caso.ciudadano.ingreso}</dd>
             </dl>
             <dl className="doc__dato">
               <dt>ENTIDAD</dt>
@@ -79,8 +99,46 @@ export default function CasoDetalle({ caso, contenido, onVolver }) {
             <div className="doc__seccion">RESUMEN DEL RECLAMO</div>
             <p className="doc__texto">{caso.resumen}</p>
 
-            <div className="doc__seccion">FUNDAMENTO GENERADO POR IA</div>
-            <p className="doc__texto">{contenido.reclamoListo.fundamento}</p>
+            <div className="doc__seccion">PUNTAJE DE PRIORIDAD (REGLAS, NO IA)</div>
+            <div className="puntaje">
+              <div className="puntaje__head">
+                <span className="puntaje__num">
+                  {caso.puntaje.total} <span>/ 50</span>
+                </span>
+                <span className="triage__dot" style={{ width: 10, height: 10, background: "var(--color-accent)" }} />
+                <span className="plazo__meta">MÁS PUNTOS = MÁS URGENTE</span>
+              </div>
+              <div className="puntaje__bar">
+                <div
+                  className="puntaje__fill"
+                  style={{ width: `${Math.min(100, (caso.puntaje.total / 50) * 100)}%` }}
+                />
+              </div>
+              {reglasAplicadas.map((r) => (
+                <div className="puntaje__regla" key={r.id}>
+                  <span>{r.regla}</span>
+                  <b>+{r.puntos}</b>
+                </div>
+              ))}
+            </div>
+
+            {caso.patron && (
+              <div className="derecho" style={{ borderLeft: "3px solid var(--color-accent)" }}>
+                <div className="derecho__label">PATRÓN ACTIVO CONTRA {caso.entidad.toUpperCase()}</div>
+                <p className="derecho__texto">
+                  Hay reclamos repetidos del mismo tipo contra esta entidad. Podés
+                  generar una intimación colectiva desde PATRONES.
+                </p>
+                <button
+                  type="button"
+                  className="btn btn--ghost"
+                  style={{ marginTop: "0.5rem" }}
+                  onClick={onPatrones}
+                >
+                  VER PATRONES <Icon name="alert" size={14} />
+                </button>
+              </div>
+            )}
 
             <div className="doc__seccion">TRAZABILIDAD</div>
             <div className="timeline">
@@ -97,7 +155,7 @@ export default function CasoDetalle({ caso, contenido, onVolver }) {
 
             <div className="doc__foot">
               <Barcode />
-              <span className="fecha-stamp">MESA DE ENTRADA — {fechaCorta(caso.fecha)}</span>
+              <span className="fecha-stamp">OFICINA DEL CONSUMIDOR — {fechaCorta(caso.fecha)}</span>
             </div>
           </div>
         </div>
@@ -114,6 +172,11 @@ export default function CasoDetalle({ caso, contenido, onVolver }) {
             <button type="button" className="btn btn--block">
               ENVIAR RESPUESTA <Icon name="doc" size={14} />
             </button>
+            {caso.vencido && (
+              <button type="button" className="btn btn--block" style={{ borderColor: "var(--color-accent)", color: "var(--color-accent)" }}>
+                ESCALAR AL BCRA <Icon name="alert" size={14} />
+              </button>
+            )}
             <button
               type="button"
               className={`btn ${resuelto ? "btn--ghost" : ""} btn--block`}
@@ -123,8 +186,8 @@ export default function CasoDetalle({ caso, contenido, onVolver }) {
             </button>
           </div>
           <p className="view__sub" style={{ marginTop: "1rem", fontSize: "0.8rem" }}>
-            La respuesta modelo se genera con IA a partir del reclamo y se envía al
-            ciudadano con el sello de la mesa de entrada.
+            {contenido.avisoLegal} La respuesta modelo se genera con la biblioteca
+            legal validada, nunca con la IA.
           </p>
         </aside>
       </div>

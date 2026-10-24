@@ -1,0 +1,72 @@
+[
+  {
+    "id": "ley-24240",
+    "nombre": "Ley 24.240 — Defensa del Consumidor",
+    "articulos": "arts. 4, 8 bis, 10 ter, 35, 36, 37 y 52 bis",
+    "resumen": "Información veraz, trato digno, prohibición de cláusulas abusivas y responsabilidad por daños. Es la base de todo reclamo de consumo.",
+    "link": "https://www.argentina.gob.ar/normativa/nacional/ley-24240-638/texto"
+  },
+  {
+    "id": "ley-26361",
+    "nombre": "Ley 26.361 — Reforma de la Ley 24.240",
+    "articulos": "incorporó trato digno (art. 8 bis) y modos de rescisión (art. 10 ter)",
+    "resumen": "Nadie puede someterte a malos tratos durante la gestión del reclamo, y tenés derecho a rescindir contratos de consumo.",
+    "link": "https://www.argentina.gob.ar/normativa/nacional/ley-26361-139252/texto"
+  },
+  {
+    "id": "res-316",
+    "nombre": "Resolución 316/2018 — Secretaría de Comercio",
+    "articulos": "botón de baja, con modificaciones posteriores",
+    "resumen": "Todo servicio contratado por internet debe poder darse de baja por el mismo canal, con un botón visible. Sin llamados ni ventanillas.",
+    "link": "https://www.argentina.gob.ar/normativa/nacional/norma-310734/normas-modifican"
+  },
+  {
+    "id": "ccyc",
+    "nombre": "Ley 26.994 — Código Civil y Comercial",
+    "articulos": "arts. 771, 1097, 1098, 1384 y ss.",
+    "resumen": "Los jueces pueden reducir intereses abusivos (771). Trato digno y equitativo en la contratación (1097/1098). Reglas para contratos bancarios con consumidores (1384 y ss.).",
+    "link": "http://www.infoleg.gob.ar/infolegInternet/verNorma.do?id=235975"
+  },
+  {
+    "id": "ley-25326",
+    "nombre": "Ley 25.326 — Protección de Datos Personales",
+    "articulos": "arts. 16 y 26",
+    "resumen": "Podés pedir la rectificación de tus datos en 5 días hábiles (16). La información crediticia se borra a los 5 años de la mora y a los 2 si pagaste (26).",
+    "link": "https://www.argentina.gob.ar/normativa/nacional/64790/texto"
+  },
+  {
+    "id": "dec-1558",
+    "nombre": "Decreto 1558/2001 — Reglamentación de la Ley 25.326",
+    "articulos": "reglamentación completa",
+    "resumen": "Detalla cómo se ejerce el derecho de rectificación y los plazos para los informes crediticios.",
+    "link": "https://www.argentina.gob.ar/normativa/nacional/70368/texto"
+  },
+  {
+    "id": "bcra-pusf",
+    "nombre": "BCRA — Texto ordenado: Protección de los usuarios de servicios financieros",
+    "articulos": "plazos de reclamo, débitos automáticos, comisiones",
+    "resumen": "La norma clave del sistema financiero: 10 días hábiles para responder reclamos, reglas de débitos automáticos y transparencia de comisiones.",
+    "link": "https://www.bcra.gob.ar/archivos/Pdfs/Texord/t-pusf.pdf"
+  },
+  {
+    "id": "bcra-tasas",
+    "nombre": "BCRA — Texto ordenado de tasas de interés",
+    "articulos": "topes y publicación de tasas",
+    "resumen": "Fija los límites y obligaciones de información de tasas para préstamos y tarjetas. Base para discutir costos abusivos.",
+    "link": "https://www.bcra.gob.ar/archivos/Pdfs/Texord/t-tasint.pdf"
+  },
+  {
+    "id": "bcra-deudores",
+    "nombre": "BCRA — Central de Deudores (manual de la API)",
+    "articulos": "situación crediticia 1 a 5",
+    "resumen": "Tu situación crediticia va de 1 a 5. Si está mal informada, se corrige: la deuda no reconocida no puede dejarte en situación 3 o más.",
+    "link": "https://www.bcra.gob.ar/archivos/Catalogo/Content/files/pdf/central-deudores-v1.pdf"
+  },
+  {
+    "id": "ley-25065",
+    "nombre": "Ley 25.065 — Tarjetas de Crédito",
+    "articulos": "impugnación del resumen",
+    "resumen": "Regula cómo impugnar cargos del resumen de la tarjeta: aviso al emisor y suspensión del cobro mientras se investiga.",
+    "link": "https://www.argentina.gob.ar/normativa/nacional/ley-25065-87/texto"
+  }
+]

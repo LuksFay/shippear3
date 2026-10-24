@@ -1,18 +1,17 @@
 import { useState } from "react";
 import ReclamoTicket from "../components/ReclamoTicket.jsx";
-import Doc from "../components/Doc.jsx";
 import Icon from "../components/Icon.jsx";
 
-const filtros = ["TODOS", "EN TRÁMITE", "DERIVADOS", "RESUELTOS"];
+const filtros = ["TODOS", "EN TRÁMITE", "VENCIDOS", "ESCALADOS", "RESUELTOS"];
 
-export default function MisReclamos({ reclamos, contenido, onNuevo, onVolver }) {
+export default function MisReclamos({ reclamos, onNuevo, onOpen, onVolver }) {
   const [filtro, setFiltro] = useState("TODOS");
-  const [seleccionado, setSeleccionado] = useState(null);
 
   const filtrados = reclamos.filter((r) => {
     if (filtro === "TODOS") return true;
     if (filtro === "EN TRÁMITE") return r.estado === "EN TRÁMITE";
-    if (filtro === "DERIVADOS") return r.estado === "DERIVADO";
+    if (filtro === "VENCIDOS") return r.estado === "VENCIDO";
+    if (filtro === "ESCALADOS") return r.estado === "ESCALADO AL BCRA";
     return r.estado === "RESUELTO";
   });
 
@@ -23,7 +22,8 @@ export default function MisReclamos({ reclamos, contenido, onNuevo, onVolver }) 
         MIS <em>RECLAMOS</em>
       </h1>
       <p className="view__sub">
-        Cada reclamo tiene número de expediente, sello de estado y seguimiento en vivo.
+        Cada reclamo tiene expediente, sello de estado y el plazo de 10 días hábiles
+        del BCRA. Los vencidos se escalan al BCRA.
       </p>
 
       <div className="chip-row">
@@ -41,19 +41,9 @@ export default function MisReclamos({ reclamos, contenido, onNuevo, onVolver }) 
 
       <div className="list-stack" data-fuse-container>
         {filtrados.map((r) => (
-          <ReclamoTicket key={r.id} reclamo={r} onOpen={() => setSeleccionado(r)} />
+          <ReclamoTicket key={r.id} reclamo={r} onOpen={onOpen} />
         ))}
       </div>
-
-      {seleccionado && (
-        <div className="section" data-fuse="fade-up" data-fuse-auto>
-          <div className="section__head">
-            <h2>EXPEDIENTE</h2>
-            <span className="section__num">{seleccionado.id}</span>
-          </div>
-          <Doc reclamo={seleccionado} contenido={contenido} />
-        </div>
-      )}
 
       <div className="form-group" style={{ marginTop: "1.5rem" }}>
         <button type="button" className="btn btn--ghost btn--block" onClick={onNuevo}>

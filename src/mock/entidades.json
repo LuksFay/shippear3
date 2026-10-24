@@ -1,8 +1,8 @@
 [
-  { "id": "ent-01", "nombre": "Delta Banco", "categoria": "Bancos" },
-  { "id": "ent-02", "nombre": "Edeluz S.A.", "categoria": "Servicios" },
-  { "id": "ent-03", "nombre": "Agua Clara", "categoria": "Servicios" },
-  { "id": "ent-04", "nombre": "Movitel", "categoria": "Telecom" },
-  { "id": "ent-05", "nombre": "Municipalidad de Caballito", "categoria": "Municipal" },
-  { "id": "ent-06", "nombre": "Seguro Progreso", "categoria": "Bancos" }
+  { "id": "ent-01", "nombre": "Delta Banco", "categoria": "BANCOS" },
+  { "id": "ent-02", "nombre": "Banco Austral", "categoria": "BANCOS" },
+  { "id": "ent-03", "nombre": "Tarjeta Clave", "categoria": "TARJETAS" },
+  { "id": "ent-04", "nombre": "Billetera Luma", "categoria": "BILLETERAS" },
+  { "id": "ent-05", "nombre": "Billetera Volt", "categoria": "BILLETERAS" },
+  { "id": "ent-06", "nombre": "Financiera Progreso", "categoria": "BANCOS" }
 ]
