@@ -1,0 +1,62 @@
+name: deploy
+
+# Cada push a main: compila (frontend + chequeo del backend) y, si pasa, redeploya en Contabo.
+# El servidor sólo acepta esta llave para UNA cosa: correr /usr/local/sbin/shippear-redeploy
+# (git pull --ff-only + docker compose up -d --build de los servicios de shippear). No da shell.
+#
+# Secrets requeridos (Settings → Secrets and variables → Actions):
+#   SHIPPEAR_SSH_HOST, SHIPPEAR_SSH_USER, SHIPPEAR_SSH_KEY, SHIPPEAR_SSH_KNOWN_HOSTS
+
+on:
+  push:
+    branches: [main]
+  workflow_dispatch:
+
+concurrency:
+  group: deploy-production
+  cancel-in-progress: false
+
+permissions:
+  contents: read
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: npm
+          cache-dependency-path: |
+            package-lock.json
+            server/package-lock.json
+      - name: Frontend build
+        run: npm ci && npm run build
+      - name: Backend check
+        working-directory: server
+        run: npm ci && npm run check
+
+  deploy:
+    needs: build
+    runs-on: ubuntu-latest
+    steps:
+      - name: Redeploy en Contabo
+        env:
+          SSH_HOST: ${{ secrets.SHIPPEAR_SSH_HOST }}
+          SSH_USER: ${{ secrets.SHIPPEAR_SSH_USER }}
+          SSH_KEY: ${{ secrets.SHIPPEAR_SSH_KEY }}
+          SSH_KNOWN_HOSTS: ${{ secrets.SHIPPEAR_SSH_KNOWN_HOSTS }}
+        run: |
+          if [ -z "$SSH_HOST" ] || [ -z "$SSH_USER" ] || [ -z "$SSH_KEY" ] || [ -z "$SSH_KNOWN_HOSTS" ]; then
+            echo "::warning::Faltan secrets SHIPPEAR_SSH_*; no se redeploya."
+            exit 0
+          fi
+          install -m 700 -d ~/.ssh
+          printf '%s\n' "$SSH_KEY" > ~/.ssh/deploy_key
+          chmod 600 ~/.ssh/deploy_key
+          printf '%s\n' "$SSH_KNOWN_HOSTS" > ~/.ssh/known_hosts
+          ssh -i ~/.ssh/deploy_key -o IdentitiesOnly=yes -o StrictHostKeyChecking=yes \
+              -o ConnectTimeout=20 -o ServerAliveInterval=30 \
+              "$SSH_USER@$SSH_HOST" redeploy
+          rm -f ~/.ssh/deploy_key

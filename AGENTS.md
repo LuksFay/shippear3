@@ -19,7 +19,9 @@
 
 ## Estado actual
 
-- **Fase actual: DISEÑO.** Toda la data es mock (`src/mock/`). No hay IA real ni backend.
+- **Fase actual:** chat del vecino con IA real vía `server/` (API propia, la clave vive sólo en el
+  servidor) e ingreso con DNI + código por email. El resto de la data sigue en `src/mock/`.
+  En el chat NO se escriben respuestas fijas en el frontend: todo sale de `/api/chat`.
 - **Stack objetivo (fase funciones, según brief):** Next.js, Supabase, Vercel AI SDK
   con Gemini (plan gratuito) + Groq de respaldo, deploy en Vercel, API pública de la
   Central de Deudores del BCRA, Claude Code.
