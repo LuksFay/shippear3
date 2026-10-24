@@ -36,6 +36,13 @@ export const config = {
     localVisionModel: env.AI_LOCAL_VISION_MODEL || "",
     localKeepAlive: env.AI_LOCAL_KEEP_ALIVE || "30m",
     localTimeoutMs: num(env.AI_LOCAL_TIMEOUT_MS, 120_000),
+    // Voz a texto: cadena propia (ver server/src/ai/stt.js). Por defecto xAI y, si está, whisper en Broly.
+    stt: env.AI_STT || "xai,whisper,openai",
+    xaiSttModel: env.AI_XAI_STT_MODEL || "grok-voice-transcribe-2.0",
+    sttTimeoutMs: num(env.AI_STT_TIMEOUT_MS, 30_000),
+    whisperUrl: env.AI_WHISPER_URL || "",
+    whisperModel: env.AI_WHISPER_MODEL || "small",
+    whisperTimeoutMs: num(env.AI_WHISPER_TIMEOUT_MS, 90_000),
     chatPerHour: num(env.AI_CHAT_PER_HOUR, 40),
     chatPerDay: num(env.AI_CHAT_PER_DAY, 200),
   },

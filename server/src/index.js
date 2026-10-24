@@ -3,6 +3,7 @@ import { assertConfig, config } from "./config.js";
 import { cleanup, migrate, q } from "./db.js";
 import { currentUser, HttpError, logout, publicUser, requestCode, sessionCookie, verifyCode } from "./auth.js";
 import { aiStatus, chat, transcribe } from "./chat.js";
+import { getStt } from "./ai/stt.js";
 import { getProvider } from "./ai/index.js";
 
 const MAX_BODY = 12 * 1024 * 1024;
@@ -74,10 +75,12 @@ const routes = {
       db = true;
     } catch {}
     const p = getProvider();
-    const ai = { provider: p.name, model: p.model, audio: p.audio !== false, files: p.supportsFiles, ...aiStatus };
+    const stt = getStt();
+    const ai = { provider: p.name, model: p.model, audio: stt.available, files: p.supportsFiles, ...aiStatus };
     if (p.ping) Object.assign(ai, await p.ping(), { at: new Date().toISOString() });
+    ai.stt = await stt.ping();
     if (aiStatus.ok === false && ai.ok) ai.lastError = aiStatus.error; // último error real (sin secretos)
-    return [db ? 200 : 503, { ok: db, db, ai, version: "0.3.0" }];
+    return [db ? 200 : 503, { ok: db, db, ai, version: "0.4.0" }];
   },
   "POST /api/auth/request": async (req, body) => [200, await requestCode({ role: body.role, doc: body.doc ?? body.dni, email: body.email, ip: clientIp(req) })],
   "POST /api/auth/verify": async (req, body) => {

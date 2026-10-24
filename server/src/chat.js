@@ -1,6 +1,7 @@
 import { config } from "./config.js";
 import { q } from "./db.js";
 import { getProvider } from "./ai/index.js";
+import { getStt } from "./ai/stt.js";
 import { HttpError } from "./auth.js";
 import { SYSTEM, SCHEMA, TIPO_IDS } from "./prompt.js";
 import { readPdf } from "./pdf.js";
@@ -136,24 +137,24 @@ export async function chat(user, body) {
 }
 
 export async function transcribe(user, body) {
-  const provider = getProvider();
-  if (provider.audio === false)
-    throw new HttpError(501, "audio_no_disponible", "Por ahora no puedo escuchar audios. Escribime lo que pasó.");
+  const stt = getStt();
+  if (!stt.available)
+    throw new HttpError(503, "audio_no_disponible", "No pude escuchar el audio. Probá de nuevo o escribilo.");
   await checkQuota(user.id);
   const m = /^data:(audio\/[a-z0-9.+-]+)(;[^,]*)?;base64,(.*)$/i.exec(String(body?.dataUrl || ""));
   if (!m) throw new HttpError(400, "audio_invalido", "No pude leer el audio.");
   const buffer = Buffer.from(m[3], "base64");
+  if (buffer.length < 500) throw new HttpError(400, "audio_vacio", "El audio quedó vacío. Mantené apretado un poco más y hablá cerca del micrófono.");
   if (buffer.length > MAX_FILE_BYTES) throw new HttpError(413, "audio_largo", "El audio es muy largo.");
-  const ext = m[1].includes("mp4") ? "mp4" : m[1].includes("ogg") ? "ogg" : m[1].includes("mpeg") ? "mp3" : "webm";
+  const mime = m[1].toLowerCase();
+  const ext = /mp4|m4a|aac/.test(mime) ? "m4a" : mime.includes("ogg") ? "ogg" : mime.includes("mpeg") || mime.includes("mp3") ? "mp3" : mime.includes("wav") ? "wav" : "webm";
   try {
-    const text = await provider.transcribe({ buffer, mime: m[1], filename: `audio.${ext}` });
-    await logUse(user.id, "transcribe", provider, true, null);
-    providerOk();
-    return { text };
+    const r = await stt.transcribe({ buffer, mime, filename: `audio.${ext}` });
+    await logUse(user.id, "transcribe", { name: r.provider, model: r.model }, true, null);
+    return { text: r.text, stt: r.provider, ms: r.ms };
   } catch (e) {
-    await logUse(user.id, "transcribe", provider, false, null);
-    if (e.noAudio) throw new HttpError(501, "audio_no_disponible", "Por ahora no puedo escuchar audios. Escribime lo que pasó.");
-    console.error("[transcribe]", e.status || "", e.code || "", e.message);
-    throw providerError(e, "transcribe");
+    await logUse(user.id, "transcribe", { name: stt.names.join(","), model: null }, false, null);
+    console.error("[transcribe]", e.message);
+    throw new HttpError(503, "audio_no_disponible", "No pude escuchar el audio en este momento. Probá de nuevo o escribilo.");
   }
 }
