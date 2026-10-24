@@ -303,7 +303,7 @@ export default function Chat({ resumeId, onConfirmar, onSinSesion, onReclamo }) 
         <div className="chat__msgs" ref={msgsBoxRef} aria-live="polite" data-fuse-container>
           <div className="bubble bubble--ia bubble--bienvenida">
             {BIENVENIDA}
-            <span className="bubble__meta">SALDO A FAVOR</span>
+            <span className="bubble__meta bubble__meta--marca">Saldo a Favor</span>
           </div>
           {cargando && (
             <div className="bubble bubble--ia">
@@ -314,7 +314,7 @@ export default function Chat({ resumeId, onConfirmar, onSinSesion, onReclamo }) 
             m.from === "ia" ? (
               <div className="bubble bubble--ia" key={i} data-fuse="fade-up" data-fuse-auto>
                 {m.text}
-                <span className="bubble__meta">SALDO A FAVOR · {m.time} · {m.por === "Grok" || m.por === "Qwen" ? m.por : "IA"}</span>
+                <span className="bubble__meta bubble__meta--marca">Saldo a Favor · {m.time} · {m.por === "Grok" || m.por === "Qwen" ? m.por : "IA"}</span>
               </div>
             ) : m.file ? (
               <div className="bubble bubble--user" key={i} data-fuse="fade-up" data-fuse-auto>

@@ -25,8 +25,8 @@ export default function MisReclamos({ reclamos, onNuevo, onOpen, onVolver }) {
         MIS <em>RECLAMOS</em>
       </h1>
       <p className="view__sub">
-        Cada reclamo tiene expediente, sello de estado y el plazo de 10 días hábiles
-        del BCRA. Los vencidos se escalan al BCRA.
+        Acá seguís cada reclamo y su estado. Si no responden en 10 días hábiles, te
+        armamos el reclamo al BCRA.
       </p>
 
       <div className="chip-row">

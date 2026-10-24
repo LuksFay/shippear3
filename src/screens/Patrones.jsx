@@ -57,8 +57,7 @@ export default function Patrones({ patrones, contenido, onVolver }) {
       </h1>
       <p className="view__sub">
         La bandeja detecta picos de reclamos por entidad y tipo de conflicto. Cuando
-        hay patrón, la oficina intima a la empresa en bloque con una nota fundada en
-        la biblioteca legal.
+        hay patrón, genera un borrador de intimación para revisión jurídica.
       </p>
 
       {patrones.length === 0 && (

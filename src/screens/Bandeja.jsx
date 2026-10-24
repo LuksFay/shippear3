@@ -62,7 +62,7 @@ export default function Bandeja({ casos, vinculada = true, filtros, filtro, onFi
 
   return (
     <div className="view view--wide">
-      <span className="view__kicker">OFICINA DEL CONSUMIDOR — ROSARIO</span>
+      <span className="view__kicker">Piloto para la Oficina del Consumidor de Rosario</span>
       <h1>
         {archivo ? <>ARCHIVO DE <em>CASOS</em></> : <>BANDEJA DE <em>ENTRADA</em></>}
       </h1>
