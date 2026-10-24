@@ -1,5 +1,4 @@
 import Stamp from "../components/Stamp.jsx";
-import Barcode from "../components/Barcode.jsx";
 import Icon from "../components/Icon.jsx";
 
 export default function Home({ contenido, onNuevo, onVerMis, onEntidad }) {
@@ -66,7 +65,6 @@ export default function Home({ contenido, onNuevo, onVerMis, onEntidad }) {
           <span>SALDO A FAVOR © 2026</span>
           <span>{contenido.motto}</span>
         </div>
-        <Barcode />
       </footer>
     </div>
   );

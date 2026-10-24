@@ -1,7 +1,6 @@
 import { useState } from "react";
 import Stamp from "../components/Stamp.jsx";
 import DestinoSugerido from "../components/DestinoSugerido.jsx";
-import Barcode from "../components/Barcode.jsx";
 import Icon from "../components/Icon.jsx";
 import Historial from "../components/Historial.jsx";
 
@@ -70,7 +69,7 @@ export default function CasoDetalle({ caso, contenido, reglas, onVolver, onPatro
                   <span className="triage__dot" />
                   {caso.triage === "verde" ? "AUTOSERVICIO" : caso.triage === "amarillo" ? "REVISIÓN" : "PRESENCIAL"}
                 </span>
-                <Stamp tone={resuelto ? "ok" : ""} rotate="r">
+                <Stamp tone={resuelto ? "ok" : caso.vencido ? "alert" : ""} rotate="r">
                   {resuelto ? "RESUELTO" : caso.estado}
                 </Stamp>
               </div>
@@ -158,7 +157,6 @@ export default function CasoDetalle({ caso, contenido, reglas, onVolver, onPatro
             </div>
 
             <div className="doc__foot">
-              <Barcode />
               <span className="fecha-stamp">OFICINA DEL CONSUMIDOR — {fechaCorta(caso.fecha)}</span>
             </div>
           </div>

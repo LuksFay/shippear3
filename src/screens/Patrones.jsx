@@ -68,7 +68,7 @@ export default function Patrones({ patrones, contenido, onVolver }) {
           <div className="patron" key={`${p.demo}|${p.entidad}|${p.tipo}`} data-fuse="fade-up" data-fuse-auto>
             <div className="patron__head">
               <span className="patron__entidad">{p.entidad}{p.demo && <span className="ticket__tag-demo">DEMO</span>}</span>
-              <Stamp tone={p.gravedad === "ALTA" ? "" : "warn"} rotate="r">
+              <Stamp tone={p.gravedad === "ALTA" ? "alert" : "warn"} rotate="r">
                 {p.gravedad}
               </Stamp>
             </div>
@@ -118,7 +118,7 @@ export default function Patrones({ patrones, contenido, onVolver }) {
                   CONTRA: {seleccionado.entidad.toUpperCase()} — {seleccionado.casos} CASOS
                 </div>
               </div>
-              <Stamp size="lg" rotate="r" data-fuse="popup" data-fuse-auto>
+              <Stamp size="lg" tone="warn" rotate="r" data-fuse="popup" data-fuse-auto>
                 BORRADOR
               </Stamp>
             </div>

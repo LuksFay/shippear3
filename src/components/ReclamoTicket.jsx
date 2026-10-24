@@ -1,10 +1,9 @@
 import Stamp from "./Stamp.jsx";
-import Barcode from "./Barcode.jsx";
 
 const tonePorEstado = {
   "EN TRÁMITE": "plain",
   RECIBIDO: "plain",
-  VENCIDO: "",
+  VENCIDO: "alert",
   "ESCALADO AL BCRA": "warn",
   RESPONDIDO: "plain",
   RESUELTO: "ok",
@@ -53,7 +52,6 @@ export default function ReclamoTicket({ reclamo, onOpen, tag }) {
         </dl>
         <p className="ticket__resumen">{reclamo.resumen}</p>
         <div className="ticket__foot">
-          <Barcode />
           {onOpen && (
             <button type="button" className="btn btn--ghost" onClick={() => onOpen(reclamo)}>
               {reclamo.borrador ? "CONTINUAR" : plazo || "VER DETALLE"}

@@ -287,7 +287,7 @@ export default function Chat({ resumeId, onConfirmar, onSinSesion, onReclamo }) 
     <div className="view view--app view--chat">
       <div className="chat__head">
         <div>
-          {reclamo && <span className="view__kicker">TRÁMITE Nº {reclamo.id}</span>}
+          {reclamo && msgs.some((m) => m.from === "user") && <span className="view__kicker">RECLAMO Nº {reclamo.id}</span>}
           <h1>
             CONTAME QUÉ <em>PASÓ</em>
           </h1>

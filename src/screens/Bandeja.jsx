@@ -1,6 +1,5 @@
 import { useMemo, useState } from "react";
 import Stamp from "../components/Stamp.jsx";
-import Barcode from "../components/Barcode.jsx";
 import Icon from "../components/Icon.jsx";
 
 const NOW = Date.now();
@@ -8,7 +7,7 @@ const NOW = Date.now();
 const estadoTone = {
   "EN TRÁMITE": "plain",
   RECIBIDO: "plain",
-  VENCIDO: "",
+  VENCIDO: "alert",
   RESPONDIDO: "plain",
   RESUELTO: "ok",
 };
@@ -161,9 +160,6 @@ export default function Bandeja({ casos, vinculada = true, filtros, filtro, onFi
                 <button type="button" className="btn btn--ghost">
                   RESPONDER
                 </button>
-              </div>
-              <div className="ticket__foot">
-                <Barcode />
               </div>
             </div>
           </article>

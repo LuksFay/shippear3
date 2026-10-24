@@ -12,7 +12,7 @@ export default function Seguimiento({ reclamo, contenido, onVolver, onNuevo, onC
 
   return (
     <div className="view view--app">
-      <span className="view__kicker">TRÁMITE Nº {reclamo.id}</span>
+      <span className="view__kicker">RECLAMO Nº {reclamo.id}</span>
       <h1>
         SEGUIMIENTO <em>EN VIVO</em>
       </h1>

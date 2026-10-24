@@ -401,7 +401,7 @@
   writing-mode: vertical-rl;
   transform: rotate(180deg);
   font-family: var(--font-mono);
-  font-size: 9px;
+  font-size: 11px;
   letter-spacing: 0.3em;
   text-transform: uppercase;
   white-space: nowrap;
@@ -571,7 +571,7 @@
   cursor: pointer;
   color: var(--color-muted);
   font-family: var(--font-mono);
-  font-size: 9px;
+  font-size: 11px;
   letter-spacing: 0.12em;
   text-transform: uppercase;
   position: relative;
@@ -1034,7 +1034,7 @@
 }
 .stat__label {
   font-family: var(--font-mono);
-  font-size: 9px;
+  font-size: 11px;
   letter-spacing: 0.1em;
   text-transform: uppercase;
   color: var(--color-muted);
@@ -1069,7 +1069,7 @@
 }
 .caso-cat {
   font-family: var(--font-mono);
-  font-size: 9px;
+  font-size: 11px;
   letter-spacing: 0.12em;
   text-transform: uppercase;
   color: var(--color-muted);
@@ -1206,7 +1206,7 @@
   display: block;
   margin-top: var(--space-xs);
   font-family: var(--font-mono);
-  font-size: 9px;
+  font-size: 11px;
   letter-spacing: 0.1em;
   text-transform: uppercase;
   color: var(--color-muted);
@@ -1438,7 +1438,7 @@
   align-items: center;
   justify-content: center;
   font-family: var(--font-mono);
-  font-size: 9px;
+  font-size: 11px;
   color: var(--color-muted);
 }
 .plazo__dia--done {
@@ -1590,7 +1590,7 @@
 .patron__num b.is-delta { color: var(--color-accent); }
 .patron__num span {
   font-family: var(--font-mono);
-  font-size: 9px;
+  font-size: 11px;
   letter-spacing: 0.1em;
   text-transform: uppercase;
   color: var(--color-muted);
@@ -1796,3 +1796,19 @@
 .doc__placeholder { display: inline-block; margin-top: 4px; padding: 1px 4px; background: color-mix(in srgb, var(--color-warn, #a36a00) 14%, transparent); font-style: italic; }
 .revision { border-top: 1px dashed var(--color-rule-2); margin-top: var(--space-md); padding-top: var(--space-md); display: grid; gap: var(--space-sm); }
 .bubble__meta--marca { text-transform: none; letter-spacing: 0.02em; font-size: 10px; }
+
+/* Diseño (v. piloto): rojo de marca separado del rojo de alerta, letra más grande y menos mayúsculas monoespaciadas */
+:root { --color-alert: #c3122f; }
+[data-mode="dark"] { --color-alert: #ff5a6e; }
+html { font-size: 106.25%; }
+.stamp--alert { color: var(--color-alert); border-color: var(--color-alert); }
+.triage--rojo, .login__error { color: var(--color-alert); }
+.btn--danger { background: var(--color-alert); border-color: var(--color-alert); color: #fff; }
+.plazo--vencido .plazo__meta, .derecho--alerta .derecho__label { color: var(--color-alert); }
+.view__kicker, .stat__label, .ticket__date, .ticket dt, .chip, .plazo__meta, .confirm__label, .doc__dato dt, .doc__seccion, .derecho__label, .bubble__meta, .section__num, .patron__meta, .estudio__esp {
+  font-family: var(--font-body);
+  letter-spacing: 0.04em;
+  font-weight: 600;
+}
+.view__sub { font-size: 1.05rem; line-height: 1.55; }
+.ticket--urgente { border-left-color: var(--color-alert); }

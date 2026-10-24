@@ -1,5 +1,4 @@
 import Stamp from "./Stamp.jsx";
-import Barcode from "./Barcode.jsx";
 
 const tonePorEstado = {
   "EN TRÁMITE": "",
@@ -64,7 +63,6 @@ export default function Doc({ reclamo, contenido }) {
       </div>
 
       <div className="doc__foot">
-        <Barcode />
         <span className="fecha-stamp">
           MESA DE ENTRADA — {fechaLarga(reclamo.fecha)}
         </span>
