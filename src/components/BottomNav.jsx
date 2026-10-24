@@ -9,6 +9,7 @@ const items = {
     { id: "bandeja", label: "BANDEJA", icon: "inbox" },
     { id: "patrones", label: "PATRONES", icon: "alert" },
     { id: "archivo", label: "ARCHIVO", icon: "check" },
+    { id: "estudios", label: "ESTUDIOS", icon: "building" },
   ],
 };
 

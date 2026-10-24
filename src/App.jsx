@@ -17,6 +17,9 @@ import Bandeja from "./screens/Bandeja.jsx";
 import CasoDetalle from "./screens/CasoDetalle.jsx";
 import Patrones from "./screens/Patrones.jsx";
 import Login from "./screens/Login.jsx";
+import Abogados from "./screens/Abogados.jsx";
+import Privacidad from "./screens/Privacidad.jsx";
+import Estudios from "./screens/Estudios.jsx";
 import { api } from "./lib/api.js";
 
 export default function App() {
@@ -35,6 +38,7 @@ export default function App() {
   const [datos, setDatos] = useState(null);
   const [currentReclamo, setCurrentReclamo] = useState(null);
   const [currentCaso, setCurrentCaso] = useState(null);
+  const [pagina, setPagina] = useState(null); // páginas públicas sobre cualquier vista: "abogados" | "privacidad"
 
   // El tipo de usuario lo define la sesión (lo valida el servidor); no se cambia desde la UI.
   const role = user?.role === "entidad" ? "entidad" : "ciudadano";
@@ -178,9 +182,14 @@ export default function App() {
 
   const handleNav = useCallback(
     (id) => {
+      setPagina(null);
       if (role === "ciudadano") {
         if (id === "chat") setView("chat");
         if (id === "mis") setView("mis");
+        return;
+      }
+      if (id === "estudios") {
+        setView("estudios");
         return;
       }
       if (id === "patrones") {
@@ -200,6 +209,8 @@ export default function App() {
         : "chat"
       : view === "patrones"
         ? "patrones"
+        : view === "estudios"
+          ? "estudios"
         : view === "caso"
           ? "bandeja"
           : filtro === "ARCHIVO"
@@ -288,6 +299,8 @@ export default function App() {
         onPatrones={() => setView("patrones")}
       />
     );
+  } else if (view === "estudios") {
+    screen = <Estudios />;
   } else if (view === "patrones") {
     screen = <Patrones patrones={patrones} contenido={contenido} onVolver={() => setView("bandeja")} />;
   } else {
@@ -321,15 +334,27 @@ export default function App() {
       );
   }
 
-  const viewKey = `${user ? "in" : `out-${publico.pantalla}-${publico.rol}`}-${role}-${view}-${currentReclamo?.id || ""}-${currentCaso?.id || ""}-${filtro}`;
+  if (user !== undefined && pagina === "abogados")
+    screen = <Abogados onVolver={() => setPagina(null)} onPrivacidad={() => setPagina("privacidad")} />;
+  if (user !== undefined && pagina === "privacidad") screen = <Privacidad onVolver={() => setPagina(null)} />;
+  const enChat = user && role === "ciudadano" && view === "chat" && !pagina;
+
+  const viewKey = `${pagina || ""}-${user ? "in" : `out-${publico.pantalla}-${publico.rol}`}-${role}-${view}-${currentReclamo?.id || ""}-${currentCaso?.id || ""}-${filtro}`;
 
   return (
-    <div className={`shell${user && role === "ciudadano" && view === "chat" ? " shell--chat" : ""}`}>
+    <div className={`shell${enChat ? " shell--chat" : ""}`}>
       <TopBar dark={dark} onTheme={toggleTheme} user={user} onSalir={salir} onIngresar={user === null && publico.pantalla === "landing" ? () => irAlIngreso("vecino") : null} onHome={irAlInicio} />
       <main className="main">
         <div key={viewKey} className="fuse-page-in">
           {screen}
         </div>
+        {user !== undefined && !enChat && (
+          <footer className="sitefoot">
+            <button type="button" className="link-btn" onClick={() => { setPagina("abogados"); window.scrollTo(0, 0); }}>Para estudios jurídicos y abogados</button>
+            <span aria-hidden="true">·</span>
+            <button type="button" className="link-btn" onClick={() => { setPagina("privacidad"); window.scrollTo(0, 0); }}>Privacidad</button>
+          </footer>
+        )}
       </main>
       {user && <BottomNav role={role} active={navActivo} onNav={handleNav} />}
     </div>

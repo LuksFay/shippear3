@@ -54,6 +54,7 @@ export const config = {
     rejectUnauthorized: env.SMTP_TLS_REJECT_UNAUTHORIZED !== "false",
     from: env.MAIL_FROM || '"Saldo a Favor" <saldoafavor@arcadeestudio.com>',
   },
+  notifyEmail: env.NOTIFY_EMAIL || "saldoafavor@arcadeestudio.com",
   publicUrl: env.PUBLIC_URL || "https://shippear.arcadeestudio.com",
 };
 

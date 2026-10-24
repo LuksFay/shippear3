@@ -1,6 +1,7 @@
 import http from "node:http";
 import { assertConfig, config } from "./config.js";
 import { cleanup, migrate, q } from "./db.js";
+import { listarAbogados, registrarAbogado } from "./abogados.js";
 import { currentUser, HttpError, logout, publicUser, requestCode, sessionCookie, verifyCode } from "./auth.js";
 import { aiStatus, chat, transcribe } from "./chat.js";
 import { getStt } from "./ai/stt.js";
@@ -112,6 +113,8 @@ const routes = {
   // Panel de la entidad: sólo entidades, y sólo los reclamos presentados contra la entidad vinculada.
   "GET /api/entidad/perfil": async (req) => [200, { user: publicUser(await requireUser(req, "entidad")) }],
   "GET /api/reclamos/ejemplo": async (req) => [200, await demoVecino(await requireUser(req, "vecino"))],
+  "POST /api/abogados": async (req, body) => [200, await registrarAbogado(body, clientIp(req))],
+  "GET /api/entidad/abogados": async (req) => [200, await listarAbogados(await requireUser(req, "entidad"))],
   "GET /api/entidad/casos": async (req) => [200, await casosEntidad(await requireUser(req, "entidad"))],
 };
 

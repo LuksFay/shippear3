@@ -1765,3 +1765,20 @@
 .historial__cambio { font-size: 0.95rem; line-height: 1.5; word-break: break-word; }
 .historial__cambio del { color: var(--color-muted); }
 .historial__vacio { color: var(--color-muted); font-size: 0.92rem; margin: 0; }
+
+/* Pie con enlaces públicos (abogados, privacidad) en todas las vistas salvo el chat */
+.sitefoot { display: flex; flex-wrap: wrap; justify-content: center; gap: var(--space-sm); padding: var(--space-lg) var(--space-md) calc(var(--space-lg) + 72px); color: var(--color-muted); font-size: 0.92rem; }
+@media (min-width: 1024px) { .sitefoot { padding-bottom: var(--space-lg); } }
+.abogados__esp { border: 0; padding: 0; margin: var(--space-sm) 0; display: grid; gap: var(--space-xs); }
+.check { display: flex; gap: var(--space-sm); align-items: flex-start; font-size: 1rem; line-height: 1.4; cursor: pointer; }
+.check input { width: 20px; height: 20px; margin-top: 1px; accent-color: var(--color-accent); flex: none; }
+.check--consent { margin: var(--space-md) 0; }
+.hp { position: absolute; left: -10000px; width: 1px; height: 1px; overflow: hidden; }
+.privacidad p { line-height: 1.6; margin: 0 0 var(--space-sm); }
+.privacidad__aviso { color: var(--color-muted); font-style: italic; }
+.estudios { display: grid; gap: var(--space-sm); grid-template-columns: repeat(auto-fill, minmax(280px, 1fr)); margin-top: var(--space-md); }
+.estudio { border: 1px solid var(--color-rule-2); padding: var(--space-md); background: var(--color-surface); display: grid; gap: 4px; word-break: break-word; }
+.estudio__nombre { font-weight: 700; font-size: 1.1rem; }
+.estudio__meta { color: var(--color-muted); font-size: 0.9rem; }
+.estudio__esp { font-family: var(--font-mono); font-size: 11px; letter-spacing: 0.06em; text-transform: uppercase; }
+.estudio__msj { margin: 4px 0 0; white-space: pre-wrap; font-size: 0.95rem; }

@@ -38,6 +38,8 @@ export const api = {
   editar: (id, datos) => call("/reclamos/editar", { method: "POST", body: { id, datos } }),
   historial: (id) => call(`/reclamos/historial?id=${encodeURIComponent(id)}`),
   casosEntidad: () => call("/entidad/casos"),
+  abogados: (datos) => call("/abogados", { method: "POST", body: datos }),
+  estudios: () => call("/entidad/abogados"),
   ejemplo: () => call("/reclamos/ejemplo"),
   transcribir: (dataUrl) => call("/transcribe", { method: "POST", body: { dataUrl } }),
 };

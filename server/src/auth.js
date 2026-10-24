@@ -56,7 +56,7 @@ export function normalizeDoc(v) {
   return String(v ?? "").replace(/[.\s-]/g, "");
 }
 
-function hmac(value) {
+export function hmac(value) {
   return createHmac("sha256", config.sessionSecret).update(value).digest("hex");
 }
 const sha256 = (v) => createHash("sha256").update(v).digest("hex");

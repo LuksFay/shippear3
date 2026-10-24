@@ -45,3 +45,37 @@ export async function sendLoginCode({ to, code, minutes }) {
     html,
   });
 }
+
+const esc = (v) => String(v ?? "").replace(/[&<>"']/g, (c) => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;" })[c]);
+const envolver = (titulo, filas) => `<!doctype html><html lang="es"><body style="margin:0;background:#f4efe4;font-family:Arial,Helvetica,sans-serif;color:#1a1712">
+<div style="max-width:520px;margin:0 auto;padding:28px 20px">
+<p style="font-size:12px;letter-spacing:.12em;text-transform:uppercase;color:#6b6355;margin:0 0 16px">Saldo a Favor</p>
+<p style="font-size:17px;font-weight:bold;margin:0 0 14px">${esc(titulo)}</p>
+${filas.map((f) => `<p style="font-size:14px;line-height:1.5;margin:0 0 10px">${esc(f)}</p>`).join("")}
+<p style="font-size:12px;color:#6b6355;margin:20px 0 0"><a href="${config.publicUrl}" style="color:#6b6355">${config.publicUrl.replace(/^https?:\/\//, "")}</a></p>
+</div></body></html>`;
+
+// Abogados: confirmación al estudio y aviso interno. Todo el contenido del usuario va escapado / en texto plano.
+export async function sendAbogadoConfirmacion(a) {
+  const filas = [
+    `Hola, ${a.nombre}.`,
+    "Recibimos tus datos. Gracias por sumarte a la red de estudios jurídicos de Saldo a Favor.",
+    "Te vamos a escribir con información del piloto en Rosario. Si en algún momento hay un caso que pueda derivarse, primero te lo consultamos: no compartimos casos de forma automática.",
+    "Si no fuiste vos, o querés que borremos tus datos, respondé este email.",
+  ];
+  return getTransport().sendMail({ from: config.smtp.from, to: a.email, subject: "Recibimos tus datos — Saldo a Favor", text: filas.join("\n\n"), html: envolver("Recibimos tus datos", filas) });
+}
+
+export async function sendAbogadoAviso(a) {
+  const filas = [
+    `Nombre: ${a.nombre}`,
+    `Estudio: ${a.estudio || "—"}`,
+    `Matrícula: ${a.matricula || "—"} ${a.colegio ? `(${a.colegio})` : ""}`,
+    `Email: ${a.email}`,
+    `Teléfono: ${a.telefono || "—"}`,
+    `Ciudad: ${a.ciudad}, ${a.provincia}`,
+    `Especialidades: ${a.especialidades.join(", ") || "—"}`,
+    `Mensaje: ${a.mensaje || "—"}`,
+  ];
+  return getTransport().sendMail({ from: config.smtp.from, to: config.notifyEmail, replyTo: a.email, subject: `Nuevo estudio interesado: ${a.estudio || a.nombre}`.slice(0, 150), text: filas.join("\n"), html: envolver("Nuevo estudio jurídico interesado", filas) });
+}

@@ -121,6 +121,25 @@ CREATE TABLE IF NOT EXISTS reclamo_versiones (
   created_at  TIMESTAMPTZ NOT NULL DEFAULT now(),
   UNIQUE (reclamo_id, version)
 );
+
+-- v7: estudios jurídicos / abogados que quieren recibir información (sin compartir casos automáticamente).
+CREATE TABLE IF NOT EXISTS abogados_interesados (
+  id                BIGSERIAL PRIMARY KEY,
+  nombre            TEXT NOT NULL,
+  estudio           TEXT,
+  matricula         TEXT,
+  colegio           TEXT,
+  email             TEXT NOT NULL,
+  telefono          TEXT,
+  ciudad            TEXT NOT NULL,
+  provincia         TEXT NOT NULL,
+  especialidades    TEXT[] NOT NULL DEFAULT '{}',
+  mensaje           TEXT,
+  consentimiento_at TIMESTAMPTZ NOT NULL,
+  ip_hash           TEXT NOT NULL,
+  created_at        TIMESTAMPTZ NOT NULL DEFAULT now()
+);
+CREATE INDEX IF NOT EXISTS abogados_ip_idx ON abogados_interesados (ip_hash, created_at);
 `;
 
 export async function migrate() {
