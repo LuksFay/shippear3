@@ -1,8 +1,8 @@
 import Icon from "./Icon.jsx";
-import { formatDoc } from "../lib/doc.js";
+import { maskDoc } from "../lib/doc.js";
 
 export default function TopBar({ dark, onTheme, user, onSalir, onIngresar, onHome }) {
-  const docLabel = user ? `${user.docType || (user.role === "entidad" ? "CUIT" : "DNI")} ${formatDoc(user.doc, user.role)}` : "";
+  const docLabel = user ? maskDoc(user.doc, user.role) || "MI CUENTA" : "";
   return (
     <header className="topbar">
       <button
@@ -17,7 +17,7 @@ export default function TopBar({ dark, onTheme, user, onSalir, onIngresar, onHom
       <span className="topbar__tag">MESA DE ENTRADA — ROSARIO</span>
       <div className="topbar__controls">
         {user && (
-          <span className="topbar__user" title={user.role === "entidad" ? "Entidad" : "Ciudadano"}>
+          <span className="topbar__user" title={user.role === "entidad" ? "Mi cuenta · Oficina" : "Mi cuenta · Vecino/a"}>
             <Icon name={user.role === "entidad" ? "building" : "user"} size={13} />
             {docLabel}
           </span>

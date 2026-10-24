@@ -14,6 +14,14 @@ export function cuitValido(c) {
   return dv === Number(c[10]);
 }
 
+// Documento enmascarado para mostrar en pantalla (cabecera): DNI ***.***.222 · CUIT 30-****-2.
+export function maskDoc(doc, role) {
+  const d = soloNumeros(doc);
+  if (!d) return "";
+  if (role === "entidad" && d.length === 11) return `CUIT ${d.slice(0, 2)}-****-${d.slice(10)}`;
+  return `DNI ***.***.${d.slice(-3)}`;
+}
+
 export function formatDoc(doc, role) {
   const d = soloNumeros(doc);
   if (role === "entidad" && d.length === 11) return `${d.slice(0, 2)}-${d.slice(2, 10)}-${d.slice(10)}`;

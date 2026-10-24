@@ -32,7 +32,7 @@ export default function Home({ contenido, onNuevo, onVerMis, onEntidad }) {
           </button>
           {onEntidad && (
             <button type="button" className="btn btn--ghost btn--lg" onClick={onEntidad}>
-              SOY ENTIDAD <Icon name="building" size={16} />
+              SOY DE LA OFICINA <Icon name="building" size={16} />
             </button>
           )}
         </div>

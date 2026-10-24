@@ -5,7 +5,7 @@ import { cuitValido, formatDoc, soloNumeros } from "../lib/doc.js";
 
 const TIPOS = {
   vecino: { label: "CIUDADANO", doc: "DNI", max: 8, placeholder: "Sin puntos", ayuda: "Ciudadano: entrás con tu DNI para hacer y seguir tus reclamos." },
-  entidad: { label: "ENTIDAD", doc: "CUIT/CUIL", max: 11, placeholder: "11 números, sin guiones", ayuda: "Entidad: entrás con el CUIT/CUIL para ver la bandeja de reclamos." },
+  entidad: { label: "OFICINA", doc: "CUIT/CUIL", max: 11, placeholder: "11 números, sin guiones", ayuda: "Oficina del Consumidor: entrás con el CUIT/CUIL para ver la bandeja de reclamos." },
 };
 
 export default function Login({ onLogin, rolInicial = "vecino", onVolver }) {
@@ -120,7 +120,7 @@ export default function Login({ onLogin, rolInicial = "vecino", onVolver }) {
                 type="email"
                 inputMode="email"
                 autoComplete="email"
-                placeholder={rol === "entidad" ? "reclamos@entidad.com" : "tu@email.com"}
+                placeholder={rol === "entidad" ? "reclamos@oficina.gob.ar" : "tu@email.com"}
                 value={email}
                 onChange={(e) => setEmail(e.target.value)}
               />
