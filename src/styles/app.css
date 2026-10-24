@@ -1790,3 +1790,8 @@
 .destino__nota { color: var(--color-muted); font-size: 0.9rem; }
 .directorio__filtros { display: flex; flex-wrap: wrap; gap: var(--space-sm); margin: var(--space-md) 0 var(--space-xs); }
 .directorio__filtros > * { flex: 1 1 220px; text-align: left; }
+
+/* Borrador de intimación: aviso de revisión jurídica y paso de revisión antes de descargar */
+.doc__aviso { display: inline-block; font-family: var(--font-mono); font-size: 11px; letter-spacing: 0.06em; text-transform: uppercase; padding: 2px 6px; border: 1px solid currentColor; color: var(--color-warn, #a36a00); margin-bottom: 6px; }
+.doc__placeholder { display: inline-block; margin-top: 4px; padding: 1px 4px; background: color-mix(in srgb, var(--color-warn, #a36a00) 14%, transparent); font-style: italic; }
+.revision { border-top: 1px dashed var(--color-rule-2); margin-top: var(--space-md); padding-top: var(--space-md); display: grid; gap: var(--space-sm); }

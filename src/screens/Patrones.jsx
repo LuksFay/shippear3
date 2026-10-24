@@ -1,10 +1,18 @@
-import { useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import Stamp from "../components/Stamp.jsx";
 import Icon from "../components/Icon.jsx";
 import tiposConflicto from "../mock/tiposConflicto.json";
 
 export default function Patrones({ patrones, contenido, onVolver }) {
   const [seleccionado, setSeleccionado] = useState(null);
+  const [revisando, setRevisando] = useState(false);
+  const [revisado, setRevisado] = useState(false);
+  const notaRef = useRef(null);
+  const abrir = (p) => { setSeleccionado(p); setRevisando(false); setRevisado(false); };
+  // La nota se abre a la vista: scroll automático hasta el borrador.
+  useEffect(() => {
+    if (seleccionado) notaRef.current?.scrollIntoView({ behavior: "smooth", block: "start" });
+  }, [seleccionado]);
 
   const nombreTipo = (id) => tiposConflicto.find((t) => t.id === id)?.nombre || id;
 
@@ -14,6 +22,32 @@ export default function Patrones({ patrones, contenido, onVolver }) {
       .replaceAll("{tipo}", nombreTipo(p.tipo))
       .replaceAll("{entidad}", p.entidad)
       .replaceAll("{periodo}", p.periodo);
+  const articuloTipo = (p) => contenido.intimacion.articuloTipo.replaceAll("{tipo}", nombreTipo(p.tipo));
+
+  const descargar = (p) => {
+    const i = contenido.intimacion;
+    const texto = [
+      i.aviso.toUpperCase(),
+      "",
+      i.titulo,
+      `Contra: ${p.entidad} — ${p.casos} casos (${p.periodo})`,
+      "",
+      nota(p),
+      "",
+      "FUNDAMENTO NORMATIVO",
+      i.fundamento,
+      articuloTipo(p),
+      "",
+      "Oficina del Consumidor — Rosario",
+      `Generado el ${new Date().toLocaleString("es-AR", { hour12: false })} con Saldo a Favor (piloto). No es un documento firmado.`,
+    ].join("\n");
+    const url = URL.createObjectURL(new Blob([texto], { type: "text/plain;charset=utf-8" }));
+    const a = document.createElement("a");
+    a.href = url;
+    a.download = `borrador-intimacion-${p.entidad.toLowerCase().normalize("NFD").replace(/[^a-z0-9]+/g, "-")}.txt`;
+    a.click();
+    setTimeout(() => URL.revokeObjectURL(url), 1000);
+  };
 
   return (
     <div className="view view--wide">
@@ -62,7 +96,7 @@ export default function Patrones({ patrones, contenido, onVolver }) {
             <button
               type="button"
               className="btn btn--primary btn--block"
-              onClick={() => setSeleccionado(p)}
+              onClick={() => abrir(p)}
             >
               GENERAR INTIMACIÓN COLECTIVA <Icon name="doc" size={14} />
             </button>
@@ -71,35 +105,49 @@ export default function Patrones({ patrones, contenido, onVolver }) {
       </div>
 
       {seleccionado && (
-        <div className="section" data-fuse="fade-up" data-fuse-auto>
+        <div className="section" ref={notaRef} style={{ scrollMarginTop: "4.5rem" }} data-fuse="fade-up" data-fuse-auto>
           <div className="section__head">
-            <h2>NOTA DE INTIMACIÓN</h2>
-            <span className="section__num">MODELO — BIBLIOTECA LEGAL</span>
+            <h2>BORRADOR DE NOTA</h2>
+            <span className="section__num">A REVISAR</span>
           </div>
           <div className="doc" data-fuse="brake" data-fuse-auto>
             <div className="doc__head">
               <div>
+                <div className="doc__aviso">{contenido.intimacion.aviso}</div>
                 <div className="doc__titulo">{contenido.intimacion.titulo}</div>
                 <div className="doc__nro">
                   CONTRA: {seleccionado.entidad.toUpperCase()} — {seleccionado.casos} CASOS
                 </div>
               </div>
               <Stamp size="lg" rotate="r" data-fuse="popup" data-fuse-auto>
-                INTIMACIÓN
+                BORRADOR
               </Stamp>
             </div>
             <p className="doc__texto">{nota(seleccionado)}</p>
             <div className="doc__seccion">FUNDAMENTO NORMATIVO</div>
             <p className="doc__texto">
-              Ley 24.240 de Defensa del Consumidor, art. 52; texto ordenado del BCRA
-              sobre protección de usuarios de servicios financieros. Patrón detectado
-              con reglas configurables, no generativo.
+              {contenido.intimacion.fundamento}
+              <br />
+              <span className="doc__placeholder">{articuloTipo(seleccionado)}</span>
             </p>
+            {revisando && (
+              <div className="revision" role="group" aria-label="Revisión antes de descargar">
+                <label className="check">
+                  <input type="checkbox" checked={revisado} onChange={(e) => setRevisado(e.target.checked)} />
+                  <span>Entiendo que es un borrador: el texto y el fundamento los revisa y valida el área jurídica antes de firmarlo o enviarlo.</span>
+                </label>
+                <button type="button" className="btn btn--primary" disabled={!revisado} onClick={() => descargar(seleccionado)}>
+                  DESCARGAR BORRADOR (.TXT) <Icon name="doc" size={14} />
+                </button>
+              </div>
+            )}
             <div className="doc__foot">
               <div className="list-stack" style={{ display: "flex", gap: "0.5rem", flexWrap: "wrap" }}>
-                <button type="button" className="btn btn--primary">
-                  ENVIAR A LA ENTIDAD <Icon name="send" size={14} />
-                </button>
+                {!revisando && (
+                  <button type="button" className="btn btn--primary" onClick={() => setRevisando(true)}>
+                    DESCARGAR BORRADOR <Icon name="doc" size={14} />
+                  </button>
+                )}
                 <button type="button" className="btn btn--ghost" onClick={() => setSeleccionado(null)}>
                   DESCARTAR <Icon name="x" size={14} />
                 </button>

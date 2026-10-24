@@ -50,6 +50,9 @@
   "filtros": ["TODOS", "VERDES", "AMARILLOS", "ROJOS", "VENCIDOS", "ARCHIVO"],
   "intimacion": {
     "titulo": "NOTA DE INTIMACIÓN COLECTIVA",
-    "cuerpo": "Ante {n} reclamos del tipo «{tipo}» registrados contra {entidad} en {periodo}, esta Oficina intima a {entidad} a cesar la conducta cuestionada en el plazo de 5 días hábiles, bajo apercibimiento de denuncia ante los organismos competentes (Ley 24.240, art. 52). La intimación se funda en el patrón detectado y la biblioteca legal validada."
+    "aviso": "BORRADOR – requiere revisión jurídica",
+    "fundamento": "Ley 24.240 de Defensa del Consumidor, arts. 4 (deber de información) y 8 bis (trato digno y prácticas abusivas).",
+    "articuloTipo": "[Artículo específico para «{tipo}»: a completar y validar por el área de legales]",
+    "cuerpo": "Ante {n} reclamos del tipo «{tipo}» registrados contra {entidad} en {periodo}, esta Oficina intima a {entidad} a cesar la conducta cuestionada en el plazo de 5 días hábiles, bajo apercibimiento de denuncia ante los organismos competentes (Ley 24.240, arts. 4 y 8 bis). La intimación se funda en el patrón detectado con reglas configurables y debe ser revisada por el área jurídica antes de su firma."
   }
 }
