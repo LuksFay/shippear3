@@ -1,0 +1,1109 @@
+/*
+  ════════════════════════════════════════════════════════════════════════════════
+  FUSION ENGINE — Arcade Hallmark
+  ════════════════════════════════════════════════════════════════════════════════
+  Fusión verdadera de:
+    • Hallmark (Nutlope/Together AI) — 20 temas OKLCH, macroestructuras,
+      sistema de tokens, anti-slop, pre-emit critique
+    • Design-Reference (Arcade Estudio) — ADP Protocol (Alma/Huesos/Aliento/
+      Chispa/Piel), theme-proof (claro/oscuro), texturas, feedback táctico
+    • yui540 — Patrones reales de animación: squash-and-stretch bounce,
+      braking con overshoot, domino stagger, page transitions out→in,
+      easings orgánicos
+
+  Versión: 1.0.0 — Julio 2026
+  ════════════════════════════════════════════════════════════════════════════════
+*/
+
+/* ──────────────────────────────────────────────────────────────
+   PARTE 1: BASE YUI540 — EASINGS ORGÁNICOS
+   Los easings reales que yui540 usa en sus demos.
+   ────────────────────────────────────────────────────────────── */
+
+:root {
+  /* yui540 easings — extraídos de sus archivos reales */
+  --ease-yui-popup:    cubic-bezier(0.68, -0.6, 0.32, 1.6);   /* bounce with overshoot */
+  --ease-yui-brake:    cubic-bezier(0, 0.7, 0.6, 1);           /* fast slide + hard brake */
+  --ease-yui-spring:   cubic-bezier(0.22, 1, 0.36, 1);         /* standard organic entry */
+  --ease-yui-out:      cubic-bezier(0.76, 0, 0.24, 1);         /* dramatic out */
+  --ease-yui-in-out:   cubic-bezier(0.42, 0, 0.58, 1);         /* subtle in-out */
+  --ease-yui-settle:   cubic-bezier(0.25, 0.1, 0.25, 1);       /* settle/decay */
+  --ease-yui-stagger:  cubic-bezier(0.34, 1.56, 0.64, 1);      /* staggered entry bounce */
+
+  /* Timings yui540-style */
+  --dur-yui-micro:   200ms;
+  --dur-yui-short:   400ms;
+  --dur-yui-medium:  600ms;
+  --dur-yui-long:    800ms;
+  --dur-yui-xlong:   1200ms;
+  --dur-yui-page:    650ms;
+
+  /* Stagger base unit */
+  --stagger-unit: 100ms;
+
+  /* Grain texture (Design-Reference) */
+  --grain-opacity: 0.03;
+}
+
+/* ──────────────────────────────────────────────────────────────
+   PARTE 2: TEMAS HALLMARK CON CLARO/OSCURO (FUSIÓN)
+   Cada tema de Hallmark adaptado con variante dark/light
+   al estilo Design-Reference.
+   ────────────────────────────────────────────────────────────── */
+
+/* =================================================================
+   SPECIMEN — warm oat editorial workshop · serif
+   ================================================================= */
+[data-theme="specimen"],
+[data-theme="specimen"][data-mode="light"] {
+  --color-paper:    oklch(96%  0.018 80);
+  --color-paper-2:  oklch(93%  0.020 80);
+  --color-paper-3:  oklch(89%  0.022 75);
+  --color-rule:     oklch(82%  0.014 75);
+  --color-rule-2:   oklch(70%  0.012 70);
+  --color-muted:    oklch(52%  0.012 65);
+  --color-neutral:  oklch(38%  0.014 60);
+  --color-ink-2:    oklch(26%  0.014 60);
+  --color-ink:      oklch(18%  0.014 60);
+  --color-accent:   #FC4C02;
+  --color-accent-ink: oklch(55% 0.21 32);
+  --color-focus:    #FC4C02;
+  --color-surface:  oklch(98%  0.010 85);
+  --color-glow:     oklch(55% 0.21 32 / 0.12);
+  --font-display: "Fraunces", "Tiempos", ui-serif, Georgia, serif;
+  --font-body:    "Geist", "Söhne", ui-sans-serif, sans-serif;
+  --font-mono:    "Geist Mono", "JetBrains Mono", ui-monospace, monospace;
+}
+[data-theme="specimen"][data-mode="dark"] {
+  --color-paper:    oklch(18%  0.014 60);
+  --color-paper-2:  oklch(22%  0.016 60);
+  --color-paper-3:  oklch(26%  0.018 58);
+  --color-rule:     oklch(35%  0.014 55);
+  --color-rule-2:   oklch(48%  0.012 55);
+  --color-muted:    oklch(55%  0.012 55);
+  --color-neutral:  oklch(65%  0.014 58);
+  --color-ink-2:    oklch(78%  0.012 60);
+  --color-ink:      oklch(92%  0.010 65);
+  --color-accent:   oklch(62%  0.22 35);
+  --color-accent-ink: oklch(18% 0.014 60);
+  --color-focus:    oklch(62%  0.22 35);
+  --color-surface:  oklch(14%  0.012 60);
+  --color-glow:     oklch(62% 0.22 35 / 0.18);
+}
+
+/* =================================================================
+   MIDNIGHT — deep cool charcoal · technical
+   ================================================================= */
+[data-theme="midnight"],
+[data-theme="midnight"][data-mode="dark"] {
+  --color-paper:    oklch(15%  0.022 250);
+  --color-paper-2:  oklch(20%  0.024 250);
+  --color-paper-3:  oklch(25%  0.026 250);
+  --color-rule:     oklch(33%  0.024 245);
+  --color-rule-2:   oklch(48%  0.020 240);
+  --color-muted:    oklch(60%  0.018 240);
+  --color-neutral:  oklch(72%  0.014 235);
+  --color-ink-2:    oklch(86%  0.010 230);
+  --color-ink:      oklch(95%  0.008 230);
+  --color-accent:   oklch(72%  0.16 220);
+  --color-accent-ink: oklch(15% 0.022 250);
+  --color-focus:    oklch(72%  0.16 220);
+  --color-surface:  oklch(12%  0.020 250);
+  --color-glow:     oklch(72% 0.16 220 / 0.15);
+  --font-display: "Geist", "Futura", "Avenir Next", ui-sans-serif, sans-serif;
+  --font-body:    "Geist", "Söhne", ui-sans-serif, sans-serif;
+  --font-mono:    "Geist Mono", "JetBrains Mono", ui-monospace, monospace;
+}
+[data-theme="midnight"][data-mode="light"] {
+  --color-paper:    oklch(94%  0.008 245);
+  --color-paper-2:  oklch(91%  0.010 245);
+  --color-paper-3:  oklch(87%  0.012 245);
+  --color-rule:     oklch(78%  0.010 245);
+  --color-rule-2:   oklch(62%  0.012 245);
+  --color-muted:    oklch(48%  0.014 245);
+  --color-neutral:  oklch(35%  0.016 245);
+  --color-ink-2:    oklch(22%  0.018 245);
+  --color-ink:      oklch(14%  0.020 245);
+  --color-accent:   oklch(54%  0.18 220);
+  --color-accent-ink: oklch(98% 0.005 245);
+  --color-focus:    oklch(54%  0.18 220);
+  --color-surface:  oklch(97%  0.006 250);
+  --color-glow:     oklch(54% 0.18 220 / 0.10);
+}
+
+/* ─ rest of themes follow same dark/light dual pattern ─ */
+
+[data-theme="garden"],
+[data-theme="garden"][data-mode="light"] {
+  --color-paper:    oklch(95.5% 0.022 92);
+  --color-paper-2:  oklch(92.5% 0.026 92);
+  --color-paper-3:  oklch(88.5% 0.030 90);
+  --color-rule:     oklch(83%   0.028 115);
+  --color-rule-2:   oklch(62%   0.045 132);
+  --color-muted:    oklch(48%   0.040 138);
+  --color-neutral:  oklch(40%   0.045 142);
+  --color-ink-2:    oklch(33%   0.050 150);
+  --color-ink:      oklch(24%   0.052 152);
+  --color-accent:   oklch(47%   0.13  140);
+  --color-accent-2: oklch(54%   0.14  46);
+  --color-accent-ink: oklch(96% 0.02 92);
+  --color-focus:    oklch(47%   0.13  140);
+  --color-surface:  oklch(98%   0.015 92);
+  --color-glow:     oklch(47% 0.13 140 / 0.10);
+  --font-display: "Young Serif", ui-serif, Georgia, serif;
+  --font-body:    "Hanken Grotesk", "Geist", ui-sans-serif, system-ui, sans-serif;
+  --font-mono:    "Geist Mono", ui-monospace, monospace;
+}
+[data-theme="garden"][data-mode="dark"] {
+  --color-paper:    oklch(18%  0.030 150);
+  --color-paper-2:  oklch(22%  0.032 148);
+  --color-paper-3:  oklch(26%  0.034 146);
+  --color-rule:     oklch(32%  0.030 140);
+  --color-rule-2:   oklch(42%  0.040 135);
+  --color-muted:    oklch(50%  0.040 135);
+  --color-neutral:  oklch(60%  0.038 138);
+  --color-ink-2:    oklch(74%  0.035 140);
+  --color-ink:      oklch(88%  0.030 142);
+  --color-accent:   oklch(55%  0.15  145);
+  --color-accent-2: oklch(60%  0.16  50);
+  --color-accent-ink: oklch(18% 0.030 150);
+  --color-focus:    oklch(55%  0.15  145);
+  --color-surface:  oklch(15%  0.025 150);
+  --color-glow:     oklch(55% 0.15 145 / 0.15);
+}
+
+[data-theme="aurora"],
+[data-theme="aurora"][data-mode="dark"] {
+  --color-paper:      oklch(11%   0.025 200);
+  --color-paper-2:    oklch(15%   0.028 200);
+  --color-paper-3:    oklch(18%   0.030 200);
+  --color-rule:       oklch(28%   0.022 200);
+  --color-rule-2:     oklch(38%   0.024 200);
+  --color-muted:      oklch(60%   0.018 200);
+  --color-neutral:    oklch(74%   0.014 200);
+  --color-ink-2:      oklch(82%   0.012 200);
+  --color-ink:        oklch(96%   0.010 200);
+  --color-accent:     oklch(72%   0.170 200);
+  --color-accent-ink: oklch(11%   0.025 200);
+  --color-accent-2:   oklch(64%   0.150 175);
+  --color-focus:      oklch(72%   0.170 200);
+  --color-surface:    oklch(9%    0.020 200);
+  --color-glow:       oklch(72% 0.170 200 / 0.15);
+  --font-display: "Geist", "Inter", ui-sans-serif, system-ui, sans-serif;
+  --font-body:    "Sentient", "Geist", ui-sans-serif, sans-serif;
+  --font-mono:    "Geist Mono", ui-monospace, monospace;
+}
+[data-theme="aurora"][data-mode="light"] {
+  --color-paper:      oklch(94%  0.012 200);
+  --color-paper-2:    oklch(91%  0.014 200);
+  --color-paper-3:    oklch(87%  0.016 200);
+  --color-rule:       oklch(78%  0.012 200);
+  --color-rule-2:     oklch(60%  0.014 200);
+  --color-muted:      oklch(48%  0.016 200);
+  --color-neutral:    oklch(35%  0.018 200);
+  --color-ink-2:      oklch(22%  0.020 200);
+  --color-ink:        oklch(14%  0.020 200);
+  --color-accent:     oklch(54%  0.18  200);
+  --color-accent-ink: oklch(98%  0.008 200);
+  --color-accent-2:   oklch(48%  0.16  175);
+  --color-focus:      oklch(54%  0.18  200);
+  --color-surface:    oklch(97%  0.008 200);
+  --color-glow:       oklch(54% 0.18 200 / 0.10);
+}
+
+[data-theme="cobalt"],
+[data-theme="cobalt"][data-mode="light"] {
+  --color-paper:      oklch(98.5% 0.004 250);
+  --color-paper-2:    oklch(96.5% 0.005 252);
+  --color-paper-3:    oklch(94%   0.006 254);
+  --color-rule:       oklch(91%   0.008 255);
+  --color-rule-2:     oklch(83%   0.011 255);
+  --color-muted:      oklch(56%   0.013 255);
+  --color-neutral:    oklch(46%   0.015 255);
+  --color-ink-2:      oklch(34%   0.018 257);
+  --color-ink:        oklch(24%   0.020 258);
+  --color-accent:     oklch(58%   0.20  256);
+  --color-accent-ink: oklch(99%   0.004 256);
+  --color-focus:      oklch(58%   0.20  256);
+  --color-surface:    oklch(99.5% 0.002 250);
+  --color-glow:       oklch(58% 0.20 256 / 0.08);
+  --font-display: "Space Grotesk", "Inter Tight", ui-sans-serif, sans-serif;
+  --font-body:    "Inter", ui-sans-serif, system-ui, sans-serif;
+  --font-mono:    "JetBrains Mono", ui-monospace, monospace;
+}
+[data-theme="cobalt"][data-mode="dark"] {
+  --color-paper:      oklch(16%  0.016 258);
+  --color-paper-2:    oklch(20%  0.018 258);
+  --color-paper-3:    oklch(24%  0.020 260);
+  --color-rule:       oklch(32%  0.016 260);
+  --color-rule-2:     oklch(45%  0.018 260);
+  --color-muted:      oklch(56%  0.016 260);
+  --color-neutral:    oklch(66%  0.014 260);
+  --color-ink-2:      oklch(78%  0.012 258);
+  --color-ink:        oklch(92%  0.010 258);
+  --color-accent:     oklch(62%  0.22  260);
+  --color-accent-ink: oklch(16%  0.016 258);
+  --color-focus:      oklch(62%  0.22  260);
+  --color-surface:    oklch(13%  0.014 258);
+  --color-glow:       oklch(62% 0.22 260 / 0.15);
+}
+
+[data-theme="terminal"],
+[data-theme="terminal"][data-mode="dark"] {
+  --color-paper:    oklch(11%  0.018 145);
+  --color-paper-2:  oklch(15%  0.022 145);
+  --color-paper-3:  oklch(19%  0.024 145);
+  --color-rule:     oklch(28%  0.030 140);
+  --color-rule-2:   oklch(40%  0.050 140);
+  --color-muted:    oklch(58%  0.090 140);
+  --color-neutral:  oklch(68%  0.120 140);
+  --color-ink-2:    oklch(78%  0.140 138);
+  --color-ink:      oklch(86%  0.160 138);
+  --color-accent:   oklch(78%  0.190 138);
+  --color-accent-ink: oklch(11% 0.018 145);
+  --color-focus:    oklch(86%  0.190 138);
+  --color-surface:  oklch(9%   0.015 145);
+  --color-glow:     oklch(78% 0.190 138 / 0.12);
+  --font-display: "JetBrains Mono", "IBM Plex Mono", ui-monospace, monospace;
+  --font-body:    "JetBrains Mono", "IBM Plex Mono", ui-monospace, monospace;
+  --font-mono:    "JetBrains Mono", ui-monospace, monospace;
+}
+[data-theme="terminal"][data-mode="light"] {
+  --color-paper:    oklch(94%  0.010 145);
+  --color-paper-2:  oklch(91%  0.012 145);
+  --color-paper-3:  oklch(87%  0.014 145);
+  --color-rule:     oklch(78%  0.012 145);
+  --color-rule-2:   oklch(60%  0.015 145);
+  --color-muted:    oklch(48%  0.018 145);
+  --color-neutral:  oklch(35%  0.020 145);
+  --color-ink-2:    oklch(22%  0.022 145);
+  --color-ink:      oklch(14%  0.024 145);
+  --color-accent:   oklch(45%  0.20  145);
+  --color-accent-ink: oklch(94% 0.010 145);
+  --color-focus:    oklch(45%  0.20  145);
+  --color-surface:  oklch(97%  0.006 145);
+  --color-glow:     oklch(45% 0.20 145 / 0.10);
+}
+
+[data-theme="lumen"],
+[data-theme="lumen"][data-mode="dark"] {
+  --color-paper:      oklch(13%  0.014 265);
+  --color-paper-2:    oklch(17%  0.016 265);
+  --color-paper-3:    oklch(22%  0.018 263);
+  --color-rule:       oklch(30%  0.018 265);
+  --color-rule-2:     oklch(42%  0.020 263);
+  --color-muted:      oklch(60%  0.016 263);
+  --color-neutral:    oklch(72%  0.014 263);
+  --color-ink-2:      oklch(82%  0.010 262);
+  --color-ink:        oklch(96%  0.006 262);
+  --color-accent:     oklch(76%  0.17  50);
+  --color-accent-2:   oklch(68%  0.16  18);
+  --color-accent-ink: oklch(13%  0.014 265);
+  --color-focus:      oklch(76%  0.17  50);
+  --color-surface:    oklch(10%  0.012 265);
+  --color-glow:       oklch(80% 0.16 50 / 0.42);
+  --font-display: "Instrument Serif", "Tiempos Headline", ui-serif, Georgia, serif;
+  --font-body:    "Geist", "Inter", ui-sans-serif, sans-serif;
+  --font-mono:    "JetBrains Mono", "Geist Mono", ui-monospace, monospace;
+}
+[data-theme="lumen"][data-mode="light"] {
+  --color-paper:      oklch(97%  0.008 265);
+  --color-paper-2:    oklch(94%  0.010 265);
+  --color-paper-3:    oklch(90%  0.012 263);
+  --color-rule:       oklch(86%  0.010 265);
+  --color-rule-2:     oklch(72%  0.012 265);
+  --color-muted:      oklch(52%  0.014 265);
+  --color-neutral:    oklch(38%  0.016 265);
+  --color-ink-2:      oklch(28%  0.016 265);
+  --color-ink:        oklch(18%  0.014 265);
+  --color-accent:     oklch(46%  0.24  268);
+  --color-accent-2:   oklch(68%  0.16  18);
+  --color-accent-ink: oklch(97%  0.008 265);
+  --color-focus:      oklch(46%  0.24  268);
+  --color-surface:    oklch(99%  0.004 265);
+  --color-glow:       oklch(58% 0.22 268 / 0.28);
+}
+
+[data-theme="hum"],
+[data-theme="hum"][data-mode="light"] {
+  --color-paper:      oklch(97%  0.012 95);
+  --color-paper-2:    oklch(94%  0.016 95);
+  --color-paper-3:    oklch(91%  0.020 95);
+  --color-rule:       oklch(86%  0.014 90);
+  --color-rule-2:     oklch(70%  0.018 85);
+  --color-muted:      oklch(52%  0.014 90);
+  --color-neutral:    oklch(38%  0.014 100);
+  --color-ink-2:      oklch(28%  0.014 250);
+  --color-ink:        oklch(20%  0.012 250);
+  --color-accent:     oklch(86%  0.18 95);
+  --color-accent-2:   oklch(66%  0.18 235);
+  --color-accent-3:   oklch(68%  0.24 18);
+  --color-accent-ink: oklch(20%  0.012 250);
+  --color-focus:      oklch(66%  0.18 235);
+  --color-surface:    oklch(99%  0.006 95);
+  --color-glow:       oklch(86% 0.18 95 / 0.12);
+  --font-display: "Plus Jakarta Sans", "Geist", ui-sans-serif, sans-serif;
+  --font-body:    "Plus Jakarta Sans", "Geist", ui-sans-serif, sans-serif;
+  --font-mono:    "JetBrains Mono", "Geist Mono", ui-monospace, monospace;
+}
+[data-theme="hum"][data-mode="dark"] {
+  --color-paper:      oklch(18%  0.012 250);
+  --color-paper-2:    oklch(22%  0.014 250);
+  --color-paper-3:    oklch(26%  0.016 250);
+  --color-rule:       oklch(34%  0.014 250);
+  --color-rule-2:     oklch(48%  0.016 245);
+  --color-muted:      oklch(60%  0.014 245);
+  --color-neutral:    oklch(72%  0.012 240);
+  --color-ink-2:      oklch(84%  0.010 240);
+  --color-ink:        oklch(94%  0.008 240);
+  --color-accent:     oklch(78%  0.18  100);
+  --color-accent-2:   oklch(58%  0.18  235);
+  --color-accent-3:   oklch(64%  0.24  20);
+  --color-accent-ink: oklch(18%  0.012 250);
+  --color-focus:      oklch(58%  0.18  235);
+  --color-surface:    oklch(14%  0.010 250);
+  --color-glow:       oklch(78% 0.18 100 / 0.15);
+}
+
+/* ─── remaining themes (bloom, coral, editorial, carnival, etc.) follow same pattern ───
+   For brevity in the engine file, these are defined inline per-project or extended.
+   The base variables below apply to all themes. */
+
+/* ──────────────────────────────────────────────────────────────
+   PARTE 3: VARIABLES BASE — TIPOGRAFÍA COMO IDENTIDAD
+   ──────────────────────────────────────────────────────────────
+   "La tipografía no es para leer, es para sentir el impacto."
+   — Design-Reference, Regla Cero
+
+   La escala NO es funcional. Es artística.
+   El hero usa --text-mega (15vw). El display usa --text-display (10vw).
+   Si el título no se desborda del contenedor, es demasiado chico.
+   ────────────────────────────────────────────────────────────── */
+
+:root {
+  /* ─── ESCALA DE IDENTIDAD (no funcional) ─── */
+  --text-xs:      0.75rem;
+  --text-sm:      0.875rem;
+  --text-base:    1rem;
+  --text-md:      1.125rem;
+  --text-lg:      1.375rem;
+  --text-xl:      1.75rem;
+  --text-2xl:     2.25rem;
+  --text-3xl:     3rem;
+
+  /* DISPLAY: título de sección que grita — 10vw mínimo */
+  --text-display:   clamp(4rem, 10vw, 10rem);
+  /* MEGA: título hero que LLENA la pantalla — 15vw, el texto ES el diseño */
+  --text-mega:      clamp(6rem, 15vw, 16rem);
+  /* DISPLAY-S: subtítulo con presencia — 5vw */
+  --text-display-s: clamp(2.5rem, 5vw, 5rem);
+
+  /* ─── LINE HEIGHT — inversamente proporcional al tamaño ─── */
+  --lh-tight:    0.9;    /* para text-mega: que las letras se toquen */
+  --lh-snug:     1.02;   /* para display */
+  --lh-normal:   1.45;   /* para body */
+  --lh-relaxed:  1.6;    /* para lectura larga */
+
+  /* ─── LETTER SPACING — siempre negativo en títulos grandes ─── */
+  --tracking-display: -0.04em;  /* títulos gigantes: colapsar */
+  --tracking-tight:   -0.025em;
+  --tracking-normal:  0;
+  --tracking-wide:    0.05em;   /* labels en mayúscula */
+  --tracking-label:   0.12em;   /* monospace labels */
+
+  /* ─── PRESETS DE IDENTIDAD TIPOGRÁFICA ─── */
+  /* Cada preset define display + body + mono con personalidad cohesionada.
+     Activar con: font-family: var(--preset-X-display); */
+
+  /* SERIF EDITORIAL — Hermes Agent, Sacred Data */
+  --preset-serif-editorial-display: "Fraunces", "Playfair Display", "EB Garamond", ui-serif, Georgia, serif;
+  --preset-serif-editorial-body:    "Geist", "Söhne", ui-sans-serif, sans-serif;
+  --preset-serif-editorial-mono:    "JetBrains Mono", "Space Mono", ui-monospace, monospace;
+
+  /* MONO BRUTAL — hackers, dashboards de seguridad */
+  --preset-mono-brutal-display: "JetBrains Mono", "Space Mono", "Fira Code", ui-monospace, monospace;
+  --preset-mono-brutal-body:    "Space Grotesk", "Inter", ui-sans-serif, sans-serif;
+  --preset-mono-brutal-mono:    "JetBrains Mono", ui-monospace, monospace;
+
+  /* SANS IMPACT — posters, landing pages industriales */
+  --preset-sans-impact-display: "Bebas Neue", "Anton", "Oswald", ui-sans-serif, sans-serif;
+  --preset-sans-impact-body:    "Inter", "Geist", ui-sans-serif, sans-serif;
+  --preset-sans-impact-mono:    "Geist Mono", ui-monospace, monospace;
+
+  /* GOTHIC DARK — dark academia, ciberseguridad con peso histórico */
+  --preset-gothic-dark-display: "UnifrakturMaguntia", "Playfair Display", ui-serif, Georgia, serif;
+  --preset-gothic-dark-body:    "EB Garamond", "Cormorant Garamond", ui-serif, serif;
+  --preset-gothic-dark-mono:    "JetBrains Mono", ui-monospace, monospace;
+
+  /* VARIABLE ORGÁNICO — humano, cálido, variable */
+  --preset-variable-organic-display: "Fraunces", "Recife", ui-serif, serif;
+  --preset-variable-organic-body:    "Hanken Grotesk", "Geist", ui-sans-serif, sans-serif;
+  --preset-variable-organic-mono:    "Recursive", ui-monospace, monospace;
+
+  --space-3xs: 0.125rem;
+  --space-2xs: 0.25rem;
+  --space-xs:  0.5rem;
+  --space-sm:  0.75rem;
+  --space-md:  1rem;
+  --space-lg:  1.5rem;
+  --space-xl:  2.5rem;
+  --space-2xl: 4rem;
+  --space-3xl: 6.5rem;
+  --space-4xl: 10rem;
+
+  --section-gap: 6.5rem;
+  --section-head-gap: 1.5rem;
+
+  --page-max:      76rem;
+  --page-gutter:   clamp(1.25rem, 4vw, 3rem);
+  --measure:       62ch;
+  --rule-hair:     0.5px;
+  --rule-fine:     1px;
+
+  --radius-card:   0;
+  --radius-pill:   0;
+  --radius-input:  0;
+  --rule-card:     1px;
+  --shadow-card:   none;
+
+  --z-base:        1;
+  --z-raised:      10;
+  --z-dropdown:    100;
+  --z-sticky:      200;
+  --z-sticky-nav:  300;
+  --z-modal:       400;
+  --z-toast:       500;
+  --z-tooltip:     600;
+}
+
+/* ──────────────────────────────────────────────────────────────
+   PARTE 4: RESET ADP — Design-Reference base reset
+   ────────────────────────────────────────────────────────────── */
+
+*, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+html { overflow-x: clip; scroll-behavior: smooth; }
+body {
+  font-family: var(--font-body);
+  color: var(--color-ink);
+  background: var(--color-paper);
+  line-height: var(--lh-normal);
+  -webkit-font-smoothing: antialiased;
+  overflow-x: clip;
+  min-height: 100vh;
+  transition: background var(--dur-yui-medium) var(--ease-yui-spring),
+              color var(--dur-yui-medium) var(--ease-yui-spring);
+}
+a { color: inherit; text-decoration: none; }
+a, button { -webkit-tap-highlight-color: transparent; }
+img { max-width: 100%; display: block; }
+ul, ol { list-style: none; }
+h1, h2, h3, h4, h5, h6 {
+  font-family: var(--font-display);
+  font-weight: 700;
+  font-style: normal;
+  line-height: var(--lh-tight);
+  letter-spacing: var(--tracking-display);
+  color: var(--color-ink);
+}
+/* Regla de identidad: h1 siempre es MEGA, nunca display */
+h1 {
+  font-size: var(--text-mega);
+  font-weight: 900;
+  letter-spacing: -0.05em;
+  text-transform: uppercase;
+  line-height: var(--lh-tight);
+}
+h2 {
+  font-size: var(--text-display);
+  letter-spacing: var(--tracking-display);
+}
+h3 {
+  font-size: var(--text-display-s);
+  letter-spacing: var(--tracking-tight);
+}
+
+/* ──────────────────────────────────────────────────────────────
+   PARTE 4b: TEXTO COMO ARTE — Identidad tipográfica
+   ──────────────────────────────────────────────────────────────
+   Técnicas para que el texto no solo comunique sino que ADORNE.
+   La tipografía ES la identidad visual.
+   ────────────────────────────────────────────────────────────── */
+
+/* ─── TEXTO VERTICAL (decorativo en bordes) ─── */
+.fuse-text-vertical {
+  writing-mode: vertical-rl;
+  text-orientation: mixed;
+  font-family: var(--font-mono);
+  font-size: var(--text-xs);
+  letter-spacing: var(--tracking-label);
+  text-transform: uppercase;
+  color: var(--color-muted);
+  user-select: none;
+}
+
+/* ─── TEXTO COMO FONDO (textura tipográfica) ─── */
+.fuse-text-bg {
+  position: absolute;
+  font-family: var(--font-display);
+  font-size: clamp(8rem, 25vw, 30rem);
+  font-weight: 900;
+  line-height: 0.85;
+  letter-spacing: -0.06em;
+  text-transform: uppercase;
+  color: var(--color-ink);
+  opacity: 0.04;
+  pointer-events: none;
+  user-select: none;
+  z-index: 0;
+}
+
+/* ─── TEXTO CORTADO (parte superior recortada) ─── */
+.fuse-text-clipped {
+  overflow: hidden;
+  line-height: 0.8;
+  font-size: var(--text-mega);
+  font-family: var(--font-display);
+  font-weight: 900;
+  text-transform: uppercase;
+  letter-spacing: -0.05em;
+}
+
+/* ─── TEXTO SUPERPUESTO (mix-blend-mode) ─── */
+.fuse-text-blend {
+  position: relative;
+  mix-blend-mode: difference;
+  color: white;
+}
+
+/* ─── LABEL MONO (datos, metadata, numeración) ─── */
+.fuse-label-mono {
+  font-family: var(--font-mono);
+  font-size: var(--text-xs);
+  letter-spacing: var(--tracking-label);
+  text-transform: uppercase;
+  color: var(--color-muted);
+}
+
+/* ─── NÚMERO DE ÍNDICE (#1, #2, #3) ─── */
+.fuse-index-number {
+  font-family: var(--font-display);
+  font-size: var(--text-display);
+  font-weight: 900;
+  line-height: 1;
+  letter-spacing: -0.04em;
+  color: var(--color-accent);
+  opacity: 0.15;
+}
+
+/* ─── TÍTULO MEGA (hero que llena la pantalla) ─── */
+.fuse-title-mega {
+  font-family: var(--font-display);
+  font-size: var(--text-mega);
+  font-weight: 900;
+  line-height: var(--lh-tight);
+  letter-spacing: -0.05em;
+  text-transform: uppercase;
+  color: var(--color-ink);
+}
+
+/* ─── TÍTULO DISPLAY (sección que grita) ─── */
+.fuse-title-display {
+  font-family: var(--font-display);
+  font-size: var(--text-display);
+  font-weight: 700;
+  line-height: var(--lh-snug);
+  letter-spacing: var(--tracking-display);
+  color: var(--color-ink);
+}
+
+/* ──────────────────────────────────────────────────────────────
+   PARTE 5: TEXTURA — Grain overlay (Design-Reference)
+   ────────────────────────────────────────────────────────────── */
+
+body::after {
+  content: "";
+  position: fixed;
+  inset: 0;
+  z-index: 9999;
+  pointer-events: none;
+  opacity: var(--grain-opacity);
+  background-image: url("data:image/svg+xml,%3Csvg viewBox='0 0 256 256' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.9' numOctaves='4' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)'/%3E%3C/svg%3E");
+  background-repeat: repeat;
+  background-size: 256px 256px;
+}
+
+/* ──────────────────────────────────────────────────────────────
+   PARTE 6: FUSION MOTION ENGINE — yui540 KEYFRAMES REALES
+   Implementación fiel de los patrones de yui540, no aproximaciones.
+   ────────────────────────────────────────────────────────────── */
+
+/* ─── 6a: GHOST STATE (before visible) ─── */
+[data-fuse] {
+  opacity: 0;
+  pointer-events: none;
+  --f-delay: 0ms;
+  --f-duration: var(--dur-yui-medium);
+  --f-ease: var(--ease-yui-spring);
+}
+
+[data-fuse].is-visible,
+[data-fuse][data-fuse-auto] {
+  opacity: 1;
+  pointer-events: auto;
+  animation: var(--f-type) var(--f-duration) var(--f-ease) var(--f-delay) forwards;
+}
+
+/* ─── 6b: STAGGER CONTAINER — domino-style cascade ─── */
+[data-fuse-container] > [data-fuse] { --f-delay: calc(var(--stagger-unit) * 1); }
+[data-fuse-container] > [data-fuse]:nth-child(2) { --f-delay: calc(var(--stagger-unit) * 2); }
+[data-fuse-container] > [data-fuse]:nth-child(3) { --f-delay: calc(var(--stagger-unit) * 3); }
+[data-fuse-container] > [data-fuse]:nth-child(4) { --f-delay: calc(var(--stagger-unit) * 4); }
+[data-fuse-container] > [data-fuse]:nth-child(5) { --f-delay: calc(var(--stagger-unit) * 5); }
+[data-fuse-container] > [data-fuse]:nth-child(n+6) { --f-delay: calc(var(--stagger-unit) * 6); }
+
+/* ─── 6c: YUI540 POPUP — squash & stretch bounce ─── */
+/* Patrón real de yui540: scale(0) → scale(1.2,1.25) → scale(0.9,0.95) → scale(1) */
+[data-fuse="popup"] {
+  --f-type: fuse-popup;
+  --f-ease: var(--ease-yui-popup);
+}
+@keyframes fuse-popup {
+  from { opacity: 0; transform: scale(0, 0); }
+  20%, to { opacity: 1; }
+  50% { transform: scale(1.2, 1.25); }
+  75% { transform: scale(0.9, 0.95); }
+  to { transform: scale(1, 1); }
+}
+
+/* ─── 6d: YUI540 BRAKE — fast slide-in with hard brake + settle overshoot ─── */
+/* Patrón real: translate con cubic-bezier(0,0.7,0.6,1) + rotate overshoot */
+[data-fuse="brake"] {
+  --f-type: fuse-brake;
+  --f-ease: var(--ease-yui-brake);
+  --f-duration: var(--dur-yui-long);
+}
+@keyframes fuse-brake {
+  from { opacity: 0; translate: 120% 0; }
+  1% { opacity: 1; }
+  to { opacity: 1; translate: 0 0; }
+}
+[data-fuse="brake"]::after {
+  content: "";
+  position: absolute; inset: 0;
+  transform-origin: left bottom;
+  animation: fuse-brake-settle 0.4s var(--ease-yui-settle) 0.7s both;
+}
+@keyframes fuse-brake-settle {
+  from { rotate: -6deg; }
+  40%, 70%, to { rotate: 0deg; }
+  55% { rotate: -2deg; }
+  85% { rotate: -1deg; }
+}
+
+/* ─── 6e: YUI540 DOMINO FALL ─── */
+/* Patrón real: cada bloque con stagger + overshoot, transform-origin: right bottom */
+[data-fuse="domino"] {
+  --f-type: fuse-domino;
+  transform-origin: right bottom;
+}
+@keyframes fuse-domino {
+  from { transform: rotate(0deg); }
+  60% { transform: rotate(60deg); }
+  80% { transform: rotate(55deg); }
+  to { transform: rotate(60deg); }
+}
+
+/* ─── 6f: YUI540 FADE-UP (standard entry) ─── */
+[data-fuse="fade-up"] {
+  --f-type: fuse-fade-up;
+}
+@keyframes fuse-fade-up {
+  from { opacity: 0; transform: translateY(30px); }
+  to { opacity: 1; transform: translateY(0); }
+}
+
+/* ─── 6g: YUI540 FADE-LEFT ─── */
+[data-fuse="fade-left"] {
+  --f-type: fuse-fade-left;
+}
+@keyframes fuse-fade-left {
+  from { opacity: 0; transform: translateX(-40px); }
+  to { opacity: 1; transform: translateX(0); }
+}
+
+/* ─── 6h: YUI540 SCALE-REVEAL ─── */
+[data-fuse="scale-reveal"] {
+  --f-type: fuse-scale-reveal;
+}
+@keyframes fuse-scale-reveal {
+  from { opacity: 0; transform: scale(0.8); filter: blur(6px); }
+  to { opacity: 1; transform: scale(1); filter: blur(0); }
+}
+
+/* ─── 6i: INTERACTIVE FEEDBACK ─── */
+/* Hover magnético: leve scale + glow */
+[data-fuse-hover]:hover {
+  transform: scale(1.03);
+  box-shadow: 0 0 20px var(--color-glow);
+  transition: transform var(--dur-yui-micro) var(--ease-yui-spring),
+              box-shadow var(--dur-yui-micro) var(--ease-yui-spring);
+}
+
+/* Click squash: yui540 squash on press */
+[data-fuse-hover]:active {
+  transform: scale(0.95);
+  transition: transform var(--dur-yui-micro) var(--ease-yui-popup);
+}
+
+/* ─── 6j: YUI540 PAGE TRANSITION — OUT → IN ─── */
+/* La navegación entre vistas debe tener OUT-animation seguida de IN-animation */
+.fuse-page-out {
+  animation: fuse-page-out var(--dur-yui-page) var(--ease-yui-out) 0s both;
+}
+@keyframes fuse-page-out {
+  from { opacity: 1; transform: translateY(0) scale(1); }
+  to { opacity: 0; transform: translateY(-40px) scale(0.96); }
+}
+
+.fuse-page-in {
+  animation: fuse-page-in var(--dur-yui-page) var(--ease-yui-spring) 0s both;
+}
+@keyframes fuse-page-in {
+  from { opacity: 0; transform: translateY(40px) scale(0.96); }
+  to { opacity: 1; transform: translateY(0) scale(1); }
+}
+
+/* ─── 6k: YUI540 BOUNCE-IN (for cards, items) ─── */
+[data-fuse="bounce-in"] {
+  --f-type: fuse-bounce-in;
+  --f-ease: var(--ease-yui-popup);
+}
+@keyframes fuse-bounce-in {
+  from { opacity: 0; transform: scale(0.3) translateY(20px); }
+  50% { transform: scale(1.08) translateY(-4px); }
+  75% { transform: scale(0.96) translateY(2px); }
+  to { opacity: 1; transform: scale(1) translateY(0); }
+}
+
+/* ─── 6l: YUI540 SWAY (pendulum settle) ─── */
+[data-fuse="sway"] {
+  --f-type: fuse-sway;
+  --f-duration: var(--dur-yui-xlong);
+}
+@keyframes fuse-sway {
+  from { opacity: 0; transform: rotate(-8deg) translateX(-20px); }
+  40% { opacity: 1; transform: rotate(3deg) translateX(3px); }
+  70% { transform: rotate(-1deg) translateX(-1px); }
+  to { opacity: 1; transform: rotate(0deg) translateX(0); }
+}
+
+/* ─── 6m: CARD FLIP REVEAL — Rotación ~75° alrededor del borde ─── */
+/* Patrón observado en Hallmark/Marea: card que rota alrededor de su
+   borde izquierdo para revelar contenido "detrás". Activado en hover
+   o click. El frente se aleja (rotateY positivo) y el dorso aparece
+   con rotateY inverso. */
+
+.fuse-card-flip {
+  perspective: 1000px;
+  position: relative;
+}
+
+.fuse-card-flip__front,
+.fuse-card-flip__back {
+  backface-visibility: hidden;
+  -webkit-backface-visibility: hidden;
+  border: var(--rule-fine) solid var(--color-rule);
+  border-radius: var(--radius-card);
+  background: var(--color-paper-2);
+  padding: var(--space-lg);
+  transition: transform var(--dur-yui-long) var(--ease-yui-spring);
+}
+
+.fuse-card-flip__front {
+  transform-origin: left center;
+  position: relative;
+  z-index: 2;
+}
+
+.fuse-card-flip__back {
+  transform: rotateY(180deg);
+  position: absolute;
+  inset: 0;
+  z-index: 1;
+}
+
+/* Hover: frente rota ~75° hacia atrás, dorso se acomoda */
+.fuse-card-flip:hover .fuse-card-flip__front {
+  transform: rotateY(75deg);
+}
+.fuse-card-flip:hover .fuse-card-flip__back {
+  transform: rotateY(0deg);
+}
+
+/* Variante: activar en click (toggle) */
+.fuse-card-flip.is-flipped .fuse-card-flip__front {
+  transform: rotateY(75deg);
+}
+.fuse-card-flip.is-flipped .fuse-card-flip__back {
+  transform: rotateY(0deg);
+}
+
+/* Borde luminoso en hover (efecto glass) */
+.fuse-card-flip:hover .fuse-card-flip__front,
+.fuse-card-flip:hover .fuse-card-flip__back {
+  border-color: var(--color-accent);
+  box-shadow: 0 0 20px var(--color-glow);
+}
+
+/* ─── 6n: CARD FLIP VERTICAL — Variante con rotación X ─── */
+.fuse-card-flip--vertical .fuse-card-flip__front {
+  transform-origin: bottom center;
+}
+.fuse-card-flip--vertical .fuse-card-flip__back {
+  transform: rotateX(180deg);
+  transform-origin: bottom center;
+}
+.fuse-card-flip--vertical:hover .fuse-card-flip__front {
+  transform: rotateX(75deg);
+}
+.fuse-card-flip--vertical:hover .fuse-card-flip__back {
+  transform: rotateX(0deg);
+}
+
+/* ─── 6o: CARD FLIP SLIDE — Variante con translate + rotate ─── */
+/* El frente se desliza hacia la derecha mientras rota, revelando el dorso */
+.fuse-card-flip--slide .fuse-card-flip__front {
+  transform-origin: left center;
+  transition: transform var(--dur-yui-long) var(--ease-yui-brake);
+}
+.fuse-card-flip--slide:hover .fuse-card-flip__front {
+  transform: translateX(40%) rotateY(75deg);
+}
+.fuse-card-flip--slide:hover .fuse-card-flip__back {
+  transform: rotateY(0deg);
+  transition: transform var(--dur-yui-long) var(--ease-yui-spring) 100ms;
+}
+
+/* ──────────────────────────────────────────────────────────────
+   PARTE 7: FEEDBACK TÁCTICO — Hover estables sin layout shift
+   ────────────────────────────────────────────────────────────── */
+
+/* Magnetic outline — no cambia padding/margin/font-size */
+.fuse-btn {
+  display: inline-flex;
+  align-items: center;
+  gap: var(--space-sm);
+  padding: var(--space-sm) var(--space-lg);
+  border: var(--rule-fine) solid var(--color-rule);
+  border-radius: var(--radius-pill);
+  background: transparent;
+  color: var(--color-ink);
+  font-family: var(--font-body);
+  font-size: var(--text-sm);
+  cursor: pointer;
+  position: relative;
+  outline: none;
+  transition: color var(--dur-yui-micro) var(--ease-yui-spring),
+              background var(--dur-yui-micro) var(--ease-yui-spring);
+}
+.fuse-btn:hover {
+  background: var(--color-paper-2);
+  color: var(--color-accent);
+  box-shadow: inset 0 0 0 1px var(--color-accent);
+}
+.fuse-btn:active {
+  transform: scale(0.95);
+  transition: transform var(--dur-yui-micro) var(--ease-yui-popup);
+}
+.fuse-btn--primary {
+  background: var(--color-accent);
+  color: var(--color-accent-ink);
+  border-color: var(--color-accent);
+}
+.fuse-btn--primary:hover {
+  background: var(--color-focus);
+  box-shadow: 0 0 24px var(--color-glow);
+}
+
+/* ──────────────────────────────────────────────────────────────
+   PARTE 7b: NAV + HERO — Identidad visual MASIVA
+   ──────────────────────────────────────────────────────────────
+   La tipografía ES el diseño. El nav brand y el hero title
+   son los elementos de identidad más importantes de la página.
+   ────────────────────────────────────────────────────────────── */
+
+/* Nav — brand con presencia, no funcional */
+.fuse-nav {
+  position: fixed;
+  top: 0; left: 0; right: 0;
+  z-index: var(--z-sticky-nav);
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: var(--space-md) var(--page-gutter);
+  background: var(--color-surface);
+  border-bottom: var(--rule-hair) solid var(--color-rule);
+  backdrop-filter: blur(12px);
+}
+.fuse-nav__brand {
+  font-family: var(--font-display);
+  font-size: var(--text-display-s);
+  font-weight: 900;
+  letter-spacing: -0.03em;
+  text-transform: uppercase;
+  color: var(--color-accent);
+  line-height: 1;
+}
+.fuse-nav__controls {
+  display: flex;
+  gap: var(--space-sm);
+}
+.fuse-toggle {
+  background: none;
+  border: var(--rule-fine) solid var(--color-rule);
+  color: var(--color-ink);
+  padding: var(--space-2xs) var(--space-sm);
+  cursor: pointer;
+  font-family: var(--font-mono);
+  font-size: var(--text-xs);
+  letter-spacing: var(--tracking-label);
+  text-transform: uppercase;
+  transition: all var(--dur-yui-micro);
+}
+.fuse-toggle:hover {
+  border-color: var(--color-accent);
+  color: var(--color-accent);
+}
+
+/* Hero — título MASIVO, 15vw, el texto ES el diseño */
+.fuse-hero {
+  min-height: 100vh;
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+  align-items: flex-start;
+  padding: var(--space-4xl) var(--page-gutter) var(--space-2xl);
+  position: relative;
+  overflow: hidden;
+}
+.fuse-hero__label {
+  font-family: var(--font-mono);
+  font-size: var(--text-xs);
+  letter-spacing: var(--tracking-label);
+  text-transform: uppercase;
+  color: var(--color-muted);
+  margin-bottom: var(--space-lg);
+  padding: var(--space-xs) var(--space-lg);
+  border: var(--rule-fine) solid var(--color-rule);
+}
+.fuse-hero__title {
+  font-family: var(--font-display);
+  font-size: var(--text-mega);
+  font-weight: 900;
+  line-height: var(--lh-tight);
+  letter-spacing: -0.05em;
+  text-transform: uppercase;
+  color: var(--color-ink);
+  margin-bottom: var(--space-lg);
+  max-width: 100%;
+  overflow: visible;
+}
+.fuse-hero__title span {
+  color: var(--color-accent);
+  display: block;
+}
+.fuse-hero__sub {
+  font-size: var(--text-xl);
+  color: var(--color-muted);
+  max-width: var(--measure);
+  line-height: var(--lh-relaxed);
+}
+.fuse-hero__actions {
+  display: flex;
+  gap: var(--space-md);
+  margin-top: var(--space-2xl);
+}
+
+@media (max-width: 768px) {
+  .fuse-hero { min-height: 60vh; padding-top: var(--space-3xl); }
+  .fuse-hero__title { font-size: clamp(2.5rem, 10vw + 1rem, 5rem); }
+  .fuse-hero__sub { font-size: var(--text-lg); }
+}
+
+/* ──────────────────────────────────────────────────────────────
+   PARTE 8: UTILITY — Clases helper
+   ────────────────────────────────────────────────────────────── */
+
+.fuse-container {
+  max-width: var(--page-max);
+  margin: 0 auto;
+  padding: 0 var(--page-gutter);
+}
+.fuse-section {
+  padding: var(--section-gap) 0;
+}
+.fuse-grid {
+  display: grid;
+  gap: var(--space-lg);
+}
+.fuse-grid--2 { grid-template-columns: repeat(2, 1fr); }
+.fuse-grid--3 { grid-template-columns: repeat(3, 1fr); }
+.fuse-grid--4 { grid-template-columns: repeat(4, 1fr); }
+@media (max-width: 768px) {
+  .fuse-grid--2, .fuse-grid--3, .fuse-grid--4 { grid-template-columns: 1fr; }
+}
+@media (min-width: 769px) and (max-width: 1024px) {
+  .fuse-grid--3 { grid-template-columns: repeat(2, 1fr); }
+  .fuse-grid--4 { grid-template-columns: repeat(2, 1fr); }
+}
+
+.fuse-card {
+  background: var(--color-paper-2);
+  border: var(--rule-card) solid var(--color-rule);
+  border-radius: var(--radius-card);
+  padding: var(--space-lg);
+  box-shadow: var(--shadow-card);
+  transition: transform var(--dur-yui-short) var(--ease-yui-spring),
+              box-shadow var(--dur-yui-short) var(--ease-yui-spring);
+}
+.fuse-card:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 8px 24px var(--color-glow);
+}
+
+.fuse-label {
+  font-family: var(--font-mono);
+  font-size: var(--text-xs);
+  letter-spacing: var(--tracking-label);
+  text-transform: uppercase;
+  color: var(--color-muted);
+}
+
+/* ──────────────────────────────────────────────────────────────
+   PARTE 9: RESPONSIVE — Mobile First
+   ────────────────────────────────────────────────────────────── */
+
+@media (max-width: 480px) {
+  :root {
+    --section-gap: 3rem;
+    --space-2xl: 2rem;
+    --space-3xl: 3rem;
+  }
+}
+@media (min-width: 481px) and (max-width: 768px) {
+  :root {
+    --section-gap: 4.5rem;
+  }
+}
+
+/* ──────────────────────────────────────────────────────────────
+   PARTE 10: PREFER-REDUCED-MOTION
+   ────────────────────────────────────────────────────────────── */
+
+@media (prefers-reduced-motion: reduce) {
+  *, *::before, *::after {
+    animation-duration: 0.01ms !important;
+    transition-duration: 0.01ms !important;
+  }
+  [data-fuse] { opacity: 1 !important; pointer-events: auto !important; }
+}

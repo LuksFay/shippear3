@@ -1,0 +1,52 @@
+{
+  "motto": "Foto. Análisis. Reclamo derivado. Nada más.",
+  "hero": {
+    "label": "MESA DE ENTRADA DIGITAL",
+    "titleTop": "SUBÍ LA FOTO.",
+    "titleBottom": "RECLAMO",
+    "stamp": "LISTO",
+    "sub": "Una foto de tu factura o recibo alcanza. La IA detecta el problema, redacta el reclamo y lo deriva a la entidad responsable. Sin formularios."
+  },
+  "steps": [
+    {
+      "num": "01",
+      "titulo": "FOTO",
+      "texto": "Sacale una foto a la factura o recibo con el problema. De frente, sin reflejos."
+    },
+    {
+      "num": "02",
+      "titulo": "ANÁLISIS",
+      "texto": "La IA lee el documento, detecta el cargo o error y arma el fundamento del reclamo."
+    },
+    {
+      "num": "03",
+      "titulo": "DERIVACIÓN",
+      "texto": "El reclamo queda sellado y derivado a la entidad responsable. Vos seguís el estado en vivo."
+    }
+  ],
+  "analisis": {
+    "steps": [
+      { "id": 1, "accion": "LEYENDO DOCUMENTO", "detalle": "OCR — factura n° 0042-8821", "tiempo": 1400 },
+      { "id": 2, "accion": "DETECTANDO PROBLEMA", "detalle": "cargo duplicado — facturación", "tiempo": 1800 },
+      { "id": 3, "accion": "REDACTANDO RECLAMO", "detalle": "fundamento y derivación", "tiempo": 1600 }
+    ],
+    "lineas": [
+      "> escaneando factura 0042-8821...",
+      "> monto total: $48.200,00",
+      "> cargo duplicado detectado: $12.400,00",
+      "> entidad: EDELUZ S.A. — categoría: servicios",
+      "> redactando fundamento...",
+      "> derivando a defensa del consumidor..."
+    ]
+  },
+  "reclamoListo": {
+    "titulo": "TU RECLAMO ESTÁ SELLADO",
+    "nota": "DERIVADO A: DIRECCIÓN DE DEFENSA DEL CONSUMIDOR",
+    "fundamento": "Cargo duplicado en factura de servicio. El importe de $12.400,00 fue facturado dos veces en el período 09/2026 sin contraprestación, configurando un cobro indebido en los términos del art. 42 de la Constitución Nacional y la Ley 24.240 de Defensa del Consumidor."
+  },
+  "bandeja": {
+    "titulo": "BANDEJA DE ENTRADA",
+    "sub": "Casos ordenados por prioridad. Derivá, respondé o resolvé."
+  },
+  "filtros": ["TODOS", "URGENTES", "BANCOS", "SERVICIOS", "TELECOM", "MUNICIPAL", "ARCHIVO"]
+}

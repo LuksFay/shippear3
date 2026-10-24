@@ -1,0 +1,74 @@
+[
+  {
+    "id": "CA-2026-0089",
+    "reclamo": "RE-2026-0142",
+    "prioridad": "URGENTE",
+    "entidad": "Edeluz S.A.",
+    "categoria": "Servicios",
+    "ciudadano": { "iniciales": "MG", "distrito": "Caballito" },
+    "fecha": "2026-10-21T09:42:00",
+    "monto": 48200,
+    "resumen": "Cargo duplicado de $12.400 en factura 09/2026. Riesgo de corte por falta de pago.",
+    "estado": "PENDIENTE"
+  },
+  {
+    "id": "CA-2026-0088",
+    "reclamo": "RE-2026-0139",
+    "prioridad": "NORMAL",
+    "entidad": "Delta Banco",
+    "categoria": "Bancos",
+    "ciudadano": { "iniciales": "JR", "distrito": "Villa Crespo" },
+    "fecha": "2026-10-20T18:15:00",
+    "monto": 2150,
+    "resumen": "Comisión de mantenimiento no pactada, cobrada 3 meses seguidos.",
+    "estado": "DERIVADO"
+  },
+  {
+    "id": "CA-2026-0087",
+    "reclamo": "RE-2026-0131",
+    "prioridad": "NORMAL",
+    "entidad": "Movitel",
+    "categoria": "Telecom",
+    "ciudadano": { "iniciales": "LP", "distrito": "Palermo" },
+    "fecha": "2026-10-20T11:03:00",
+    "monto": 9800,
+    "resumen": "Facturación posterior a la baja del servicio. Sin respuesta del call center.",
+    "estado": "RESPONDIDO"
+  },
+  {
+    "id": "CA-2026-0086",
+    "reclamo": "RE-2026-0124",
+    "prioridad": "BAJA",
+    "entidad": "Agua Clara",
+    "categoria": "Servicios",
+    "ciudadano": { "iniciales": "AS", "distrito": "Almagro" },
+    "fecha": "2026-10-19T08:30:00",
+    "monto": 5400,
+    "resumen": "Lectura estimada sin aviso previo. Usuario solicita refacturación.",
+    "estado": "RESUELTO"
+  },
+  {
+    "id": "CA-2026-0085",
+    "reclamo": "RE-2026-0122",
+    "prioridad": "URGENTE",
+    "entidad": "Municipalidad de Caballito",
+    "categoria": "Municipal",
+    "ciudadano": { "iniciales": "FT", "distrito": "Caballito" },
+    "fecha": "2026-10-19T07:55:00",
+    "monto": 12700,
+    "resumen": "Multa de tránsito duplicada por mismo dominio e infracción.",
+    "estado": "PENDIENTE"
+  },
+  {
+    "id": "CA-2026-0084",
+    "reclamo": "RE-2026-0118",
+    "prioridad": "NORMAL",
+    "entidad": "Seguro Progreso",
+    "categoria": "Bancos",
+    "ciudadano": { "iniciales": "DV", "distrito": "Recoleta" },
+    "fecha": "2026-10-18T16:20:00",
+    "monto": 31500,
+    "resumen": "Siniestro no reconocido: póliza vigente al momento del hecho.",
+    "estado": "DERIVADO"
+  }
+]

@@ -1,0 +1,36 @@
+{
+  "name": "shippear",
+  "version": "0.1.0",
+  "description": "Plataforma de reclamos ciudadanos. Una foto de tu factura alcanza: la IA redacta el reclamo y lo deriva a la entidad responsable. Mesa de entrada digital.",
+  "author": {
+    "name": "Arcade Estudio",
+    "url": "https://arcade.estudio"
+  },
+  "license": "AGPL-3.0",
+  "private": true,
+  "type": "module",
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/LuksFay/shippear3.git"
+  },
+  "engines": {
+    "node": ">=22.0.0"
+  },
+  "scripts": {
+    "dev": "vite",
+    "build": "vite build",
+    "lint": "oxlint",
+    "preview": "vite preview"
+  },
+  "dependencies": {
+    "react": "^19.3.1",
+    "react-dom": "^19.3.1"
+  },
+  "devDependencies": {
+    "@types/react": "^19.3.0",
+    "@types/react-dom": "^19.3.0",
+    "@vitejs/plugin-react": "^6.1.2",
+    "oxlint": "^1.88.0",
+    "vite": "^8.3.4"
+  }
+}

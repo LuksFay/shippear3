@@ -1,0 +1,38 @@
+[
+  {
+    "id": "RE-2026-0142",
+    "fecha": "2026-10-21",
+    "entidad": "Edeluz S.A.",
+    "categoria": "Servicios",
+    "monto": 48200,
+    "estado": "EN TRÁMITE",
+    "resumen": "Cargo duplicado en factura de luz"
+  },
+  {
+    "id": "RE-2026-0139",
+    "fecha": "2026-10-18",
+    "entidad": "Delta Banco",
+    "categoria": "Bancos",
+    "monto": 2150,
+    "estado": "DERIVADO",
+    "resumen": "Comisión no pactada en caja de ahorro"
+  },
+  {
+    "id": "RE-2026-0131",
+    "fecha": "2026-10-09",
+    "entidad": "Movitel",
+    "categoria": "Telecom",
+    "monto": 9800,
+    "estado": "RESUELTO",
+    "resumen": "Cobro por plan dado de baja"
+  },
+  {
+    "id": "RE-2026-0124",
+    "fecha": "2026-09-27",
+    "entidad": "Agua Clara",
+    "categoria": "Servicios",
+    "monto": 5400,
+    "estado": "RESUELTO",
+    "resumen": "Lectura de medidor estimada sin aviso"
+  }
+]
