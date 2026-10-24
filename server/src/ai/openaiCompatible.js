@@ -29,7 +29,7 @@ export function createOpenAICompatible({ name, baseUrl, apiKey, model, transcrib
       err.type = data?.error?.type || null;
       throw err;
     }
-    const content = data.choices?.[0]?.message?.content || "{}";
+    const content = String(data.choices?.[0]?.message?.content || "{}").replace(/<think>[\s\S]*?(<\/think>|$)/gi, "").trim();
     return {
       json: JSON.parse(content),
       usage: { in: data.usage?.prompt_tokens ?? null, out: data.usage?.completion_tokens ?? null },
@@ -37,7 +37,11 @@ export function createOpenAICompatible({ name, baseUrl, apiKey, model, transcrib
   }
 
   async function transcribe({ buffer, mime, filename }) {
-    if (!transcribeModel) throw new Error(`${name}: transcripción no disponible`);
+    if (!transcribeModel) {
+      const err = new Error(`${name}: transcripción no disponible`);
+      err.noAudio = true;
+      throw err;
+    }
     const form = new FormData();
     form.append("model", transcribeModel);
     form.append("language", "es");
@@ -59,5 +63,5 @@ export function createOpenAICompatible({ name, baseUrl, apiKey, model, transcrib
     return String(data.text || "").trim();
   }
 
-  return { name, model, supportsFiles, chatJson, transcribe };
+  return { name, model, supportsFiles, audio: Boolean(transcribeModel), chatJson, transcribe };
 }

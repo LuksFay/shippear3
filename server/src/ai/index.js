@@ -1,7 +1,9 @@
-// Abstracción de proveedores de IA. Para sumar un modelo local en Broly (Ollama / LM Studio):
-//   AI_PROVIDER=local  AI_LOCAL_BASE_URL=http://<host>:11434/v1  AI_LOCAL_MODEL=<modelo>
+// Abstracción de proveedores de IA.
+//   AI_PROVIDER=local        → Ollama nativo (Broly vía túnel): AI_LOCAL_BASE_URL=http://<host>:11435  AI_LOCAL_MODEL=<modelo>
+//   AI_PROVIDER=local-openai → cualquier servidor compatible OpenAI (LM Studio, vLLM): AI_LOCAL_BASE_URL=http://<host>/v1
 import { config } from "../config.js";
 import { createOpenAICompatible } from "./openaiCompatible.js";
+import { createOllama } from "./ollama.js";
 
 const providers = {
   openai: () =>
@@ -15,8 +17,17 @@ const providers = {
       supportsFiles: true,
     }),
   local: () =>
-    createOpenAICompatible({
+    createOllama({
       name: "local",
+      baseUrl: config.ai.localBaseUrl,
+      model: config.ai.localModel,
+      visionModel: config.ai.localVisionModel,
+      keepAlive: config.ai.localKeepAlive,
+      timeoutMs: config.ai.localTimeoutMs,
+    }),
+  "local-openai": () =>
+    createOpenAICompatible({
+      name: "local-openai",
       baseUrl: config.ai.localBaseUrl,
       apiKey: config.ai.localKey,
       model: config.ai.localModel,

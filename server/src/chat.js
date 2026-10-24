@@ -1,60 +1,8 @@
-import { readFileSync } from "node:fs";
-import { join } from "node:path";
 import { config } from "./config.js";
 import { q } from "./db.js";
 import { getProvider } from "./ai/index.js";
 import { HttpError } from "./auth.js";
-
-const load = (f) => JSON.parse(readFileSync(join(config.dataDir, f), "utf8"));
-const tipos = load("tiposConflicto.json");
-const biblioteca = load("bibliotecaLegal.json");
-const TIPO_IDS = tipos.map((t) => t.id);
-
-const SYSTEM = `Sos la mesa de entrada de "Saldo a Favor", un defensor financiero vecinal de Rosario (Argentina).
-Hablás como un despachante de confianza: frases cortas, español rioplatense (vos), lenguaje simple para adultos mayores, sin jerga legal, sin emojis.
-
-Tu trabajo en este chat:
-1. Escuchar qué le pasó al vecino con un banco, tarjeta o billetera virtual.
-2. Clasificar el conflicto en UNO de estos tipos (campo "tipo", usá el id exacto):
-${tipos.map((t) => `- ${t.id}: ${t.nombre}`).join("\n")}
-3. Extraer del relato y, sobre todo, de la foto o PDF del resumen: entidad, monto (formato argentino, ej. 48.200,00), fecha (DD/MM/AAAA) y número de operación. Si un dato no aparece, dejalo vacío; nunca lo inventes.
-4. Pedir lo que falte, de a una cosa por vez. Lo ideal es que suba una foto o PDF del resumen donde se vea el problema.
-
-Reglas innegociables:
-- No inventes leyes, artículos ni plazos. No cites normas en el chat: los derechos y la normativa los muestra la app después, desde una biblioteca legal validada.
-- No prometas resultados. La escalera es: entidad (10 días hábiles para responder, BCRA) → BCRA → Oficina Municipal del Consumidor. COPREC no existe más: nunca lo menciones.
-- Si el caso no es financiero o es grave (amenazas, violencia, estafa con denuncia penal), decí con amabilidad que la Oficina del Consumidor lo atiende en persona.
-- No pidas claves, PIN, CVV, tokens ni datos de acceso al banco. Si el vecino los escribe, decile que no los comparta.
-- Respondé siempre en el JSON pedido. "reply" es lo que ve el vecino (máximo 3 oraciones).
-- "listo" = true solo cuando ya tenés tipo, entidad y monto (idealmente confirmados con el resumen). Cuando está listo, en "reply" decile que revise los datos con el botón de abajo.
-- "pedir": "resumen" si necesitás la foto/PDF, "dato" si falta un dato puntual, "confirmar" si está listo, "nada" en otro caso.
-
-Si la conversación recién empieza (sin mensajes del vecino), saludá y preguntale qué le pasó con el banco, la tarjeta o la billetera; puede escribir o mandar un audio.
-
-Contexto (no lo cites, solo para entender los tipos): ${biblioteca.map((n) => n.nombre).join("; ")}.`;
-
-const SCHEMA = {
-  type: "object",
-  additionalProperties: false,
-  required: ["reply", "pedir", "listo", "datos"],
-  properties: {
-    reply: { type: "string" },
-    pedir: { type: "string", enum: ["resumen", "dato", "confirmar", "nada"] },
-    listo: { type: "boolean" },
-    datos: {
-      type: "object",
-      additionalProperties: false,
-      required: ["tipo", "entidad", "monto", "fecha", "operacion"],
-      properties: {
-        tipo: { type: "string", enum: ["", ...TIPO_IDS] },
-        entidad: { type: "string" },
-        monto: { type: "string" },
-        fecha: { type: "string" },
-        operacion: { type: "string" },
-      },
-    },
-  },
-};
+import { SYSTEM, SCHEMA, TIPO_IDS } from "./prompt.js";
 
 const MAX_HISTORY = 24;
 const MAX_TEXT = 2000;
@@ -73,6 +21,10 @@ function providerError(e, kind) {
   if (sinCredito) {
     aiStatus.error = "ia_sin_credito";
     return new HttpError(503, "ia_sin_credito", "El asistente está fuera de servicio por un momento (el proveedor de IA no tiene crédito). Ya lo estamos resolviendo; probá más tarde.");
+  }
+  if (e.offline) {
+    aiStatus.error = "ia_offline";
+    return new HttpError(503, "ia_offline", "El asistente está desconectado en este momento. Probá de nuevo en unos minutos.");
   }
   if (e.status === 429) {
     aiStatus.error = "ia_ocupada";
@@ -127,6 +79,8 @@ function buildMessages(history, attachment, provider) {
     const approxBytes = Math.floor((dataUrl.length - dataUrl.indexOf(",") - 1) * 0.75);
     if (approxBytes > MAX_FILE_BYTES) throw new HttpError(413, "archivo_grande", "El archivo es muy grande (máx. 8 MB).");
     if (!provider.supportsFiles) throw new HttpError(400, "sin_archivos", "Este modelo todavía no puede leer archivos.");
+    if (provider.supportsFiles === "images" && PDF_RE.test(dataUrl))
+      throw new HttpError(400, "solo_fotos", "Por ahora no puedo leer PDF. Mandame una foto o captura del resumen.");
     const name = String(attachment.name || "resumen").slice(0, 120);
     let part;
     if (IMG_RE.test(dataUrl)) part = { type: "image_url", image_url: { url: dataUrl } };
@@ -164,8 +118,10 @@ export async function chat(user, body) {
 }
 
 export async function transcribe(user, body) {
-  await checkQuota(user.id);
   const provider = getProvider();
+  if (provider.audio === false)
+    throw new HttpError(501, "audio_no_disponible", "Por ahora no puedo escuchar audios. Escribime lo que pasó.");
+  await checkQuota(user.id);
   const m = /^data:(audio\/[a-z0-9.+-]+)(;[^,]*)?;base64,(.*)$/i.exec(String(body?.dataUrl || ""));
   if (!m) throw new HttpError(400, "audio_invalido", "No pude leer el audio.");
   const buffer = Buffer.from(m[3], "base64");
@@ -178,6 +134,7 @@ export async function transcribe(user, body) {
     return { text };
   } catch (e) {
     await logUse(user.id, "transcribe", provider, false, null);
+    if (e.noAudio) throw new HttpError(501, "audio_no_disponible", "Por ahora no puedo escuchar audios. Escribime lo que pasó.");
     console.error("[transcribe]", e.status || "", e.code || "", e.message);
     throw providerError(e, "transcribe");
   }

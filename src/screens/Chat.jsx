@@ -19,6 +19,11 @@ const previewSegura = (u) => (/^data:image\/(png|jpe?g|webp|gif);base64,[a-z0-9+
 
 const ERRORES = {
   ia_sin_credito: "El asistente está fuera de servicio por un momento. Ya lo estamos resolviendo; probá más tarde.",
+  ia_offline: "El asistente está desconectado en este momento. Probá de nuevo en unos minutos.",
+  ia_ocupada: "El asistente está muy ocupado. Esperá unos segundos y probá de nuevo.",
+  ia_timeout: "El asistente tardó demasiado. Probá de nuevo.",
+  audio_no_disponible: "Por ahora no puedo escuchar audios. Escribime lo que pasó.",
+  solo_fotos: "Por ahora no puedo leer PDF. Mandame una foto o captura del resumen.",
   rol_no_permitido: "El chat de reclamos es sólo para ciudadanos. Entrá con tu DNI.",
 };
 
@@ -44,6 +49,12 @@ export default function Chat({ nroExpediente, onConfirmar, onSinSesion }) {
   const msgsRef = useRef([]);
   const recRef = useRef(null);
   const started = useRef(false);
+  const sinAudio = useRef(false);
+
+  // ¿El modelo actual escucha audios? (el local de Broly todavía no). Evita grabar para nada.
+  useEffect(() => {
+    api.salud().then((h) => (sinAudio.current = h?.ai?.audio === false)).catch(() => {});
+  }, []);
 
   // Auto-scroll dentro de la lista de mensajes (la barra de escritura queda fija abajo).
   useEffect(() => {
@@ -115,6 +126,7 @@ export default function Chat({ nroExpediente, onConfirmar, onSinSesion }) {
       return;
     }
     if (busy.current) return;
+    if (sinAudio.current) return setError(ERRORES.audio_no_disponible);
     if (!navigator.mediaDevices?.getUserMedia || typeof MediaRecorder === "undefined")
       return setError("Este navegador no permite grabar audio. Escribí el mensaje.");
     try {

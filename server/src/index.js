@@ -74,7 +74,9 @@ const routes = {
       db = true;
     } catch {}
     const p = getProvider();
-    return [db ? 200 : 503, { ok: db, db, ai: { provider: p.name, model: p.model, ...aiStatus }, version: "0.2.0" }];
+    const ai = { provider: p.name, model: p.model, audio: p.audio !== false, files: p.supportsFiles, ...aiStatus };
+    if (p.ping) Object.assign(ai, await p.ping(), { at: new Date().toISOString() });
+    return [db ? 200 : 503, { ok: db, db, ai, version: "0.3.0" }];
   },
   "POST /api/auth/request": async (req, body) => [200, await requestCode({ role: body.role, doc: body.doc ?? body.dni, email: body.email, ip: clientIp(req) })],
   "POST /api/auth/verify": async (req, body) => {

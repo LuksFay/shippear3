@@ -23,6 +23,7 @@ async function call(path, { method = "GET", body } = {}) {
 }
 
 export const api = {
+  salud: () => call("/health"),
   me: () => call("/auth/me"),
   pedirCodigo: (role, doc, email) => call("/auth/request", { method: "POST", body: { role, doc, email } }),
   verificar: (role, doc, code) => call("/auth/verify", { method: "POST", body: { role, doc, code } }),
