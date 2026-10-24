@@ -1,14 +1,14 @@
 /* ════════════════════════════════════════════════════════════════════════════════
-   SHIPPEAR — Mesa de entrada digital
+   SALDO A FAVOR — Mesa de entrada digital
    Tema propio sobre la arquitectura de tokens de fusion-engine.css
    Identidad: sello de goma bermellón + papel de carta + tinta de tampón
    Tipografía: mono-brutal (JetBrains Mono display / Space Grotesk body)
    Mobile-first: 320 → 375 → 768 → 1024 → 1440
    ════════════════════════════════════════════════════════════════════════════════ */
 
-/* ─── TEMA SHIPPEAR — LIGHT (papel de carta) ─── */
-[data-theme="shippear"],
-[data-theme="shippear"][data-mode="light"] {
+/* ─── TEMA SALDO A FAVOR — LIGHT (papel de carta) ─── */
+[data-theme="saldoafavor"],
+[data-theme="saldoafavor"][data-mode="light"] {
   --color-paper:      #f4efe4;
   --color-paper-2:    #ece4d2;
   --color-paper-3:    #e0d6bf;
@@ -36,8 +36,8 @@
     repeating-linear-gradient(0deg, transparent 0 2px, oklch(98% 0.008 85 / 0.25) 2px 3px);
 }
 
-/* ─── TEMA SHIPPEAR — DARK (mesa nocturna) ─── */
-[data-theme="shippear"][data-mode="dark"] {
+/* ─── TEMA SALDO A FAVOR — DARK (mesa nocturna) ─── */
+[data-theme="saldoafavor"][data-mode="dark"] {
   --color-paper:      #12100c;
   --color-paper-2:    #1a1712;
   --color-paper-3:    #242019;

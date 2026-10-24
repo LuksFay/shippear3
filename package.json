@@ -1,7 +1,7 @@
 {
-  "name": "shippear",
-  "version": "0.1.0",
-  "description": "Plataforma de reclamos ciudadanos. Una foto de tu factura alcanza: la IA redacta el reclamo y lo deriva a la entidad responsable. Mesa de entrada digital.",
+  "name": "saldo-a-favor",
+  "version": "0.2.0",
+  "description": "Saldo a Favor — defensor financiero vecinal. Contá tu problema con el banco, subí una foto del resumen y la app arma el reclamo con la norma oficial. Mesa de entrada digital para la Oficina del Consumidor.",
   "author": {
     "name": "Arcade Estudio",
     "url": "https://arcade.estudio"

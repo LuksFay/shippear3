@@ -75,7 +75,7 @@ export default function Home({ contenido, reclamos, onNuevo, onVerMis, onOpen })
 
       <footer className="footer">
         <div className="footer__line">
-          <span>SHIPPEAR © 2026</span>
+          <span>SALDO A FAVOR © 2026</span>
           <span>{contenido.motto}</span>
         </div>
         <Barcode />

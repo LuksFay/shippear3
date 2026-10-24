@@ -26,7 +26,7 @@ export default function ReclamoTicket({ reclamo, onOpen, tag }) {
       data-fuse-auto
     >
       <div className="ticket__talon">
-        <span>SHIPPEAR {tag || reclamo.id}</span>
+        <span>SALDO A FAVOR {tag || reclamo.id}</span>
       </div>
       <div className="ticket__body">
         <div className="ticket__head">

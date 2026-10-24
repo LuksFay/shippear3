@@ -1,11 +1,11 @@
-# AGENTS.md — Shippear (Reclamá Ya)
+# AGENTS.md — Saldo a Favor
 
 > **Authoria:** Arcade Estudio
-> **Núcleo:** `C:\Dev\Arcade-Ecosystem\AGENTS.md` — todas las reglas de diseño, skills y estándares viven ahí. Este archivo solo agrega reglas específicas de shippear.
+> **Núcleo:** `C:\Dev\Arcade-Ecosystem\AGENTS.md` — todas las reglas de diseño, skills y estándares viven ahí. Este archivo solo agrega reglas específicas del proyecto.
 
 ## Qué es
 
-**Reclamá Ya** — defensor financiero vecinal (hackatón "Shippear #3", Rosario).
+**Saldo a Favor** — defensor financiero vecinal (Rosario).
 
 - **Vecino:** cuenta su problema en un chat (texto o audio) y sube una foto/PDF del
   resumen. La IA clasifica el conflicto y extrae entidad, monto, fecha y operación;
@@ -52,7 +52,7 @@
 ## Estructura
 
 ```
-shippear/
+[repo]/
 ├── goals/                  ← Branding direction (brand, references, constraints)
 ├── src/
 │   ├── mock/               ← TODA la data mostrada (provisional)
@@ -63,7 +63,7 @@ shippear/
 │   │   ├── entidades / reclamos / casos / contenido
 │   ├── styles/
 │   │   ├── fusion-engine.css  ← Motor del ecosistema (tokens, motion, reset)
-│   │   └── app.css            ← Tema shippear + componentes (papel, sello, chat, triage)
+│   │   └── app.css            ← Tema saldoafavor + componentes (papel, sello, chat, triage)
 │   ├── components/         ← Stamp, Doc, ReclamoTicket, Barcode, TopBar, BottomNav, Icon
 │   ├── screens/            ← Home, Chat, ConfirmarDatos, Derechos, ReclamoListo,
 │   │                          Seguimiento, MisReclamos, Bandeja, CasoDetalle, Patrones
@@ -79,4 +79,4 @@ shippear/
 - `npm run build` — build de producción
 - `npm run lint` — oxlint
 - QA headless (playwright-core temporal en node_modules): script en
-  `%TEMP%\opencode\shippear-qa.mjs` (no versionado)
+  `%TEMP%\opencode\saldoafavor-qa.mjs` (no versionado)

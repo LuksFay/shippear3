@@ -1,4 +1,4 @@
-# Shippear — Reclamá Ya
+# Saldo a Favor
 
 > **Authoria:** Arcade Estudio
 > **Version:** 0.2.0
@@ -33,12 +33,12 @@ npm run dev
 ## Structure
 
 ```
-shippear/
+[repo]/
 ├── goals/        ← Brand direction (brand.md, references.md, constraints.md)
 ├── src/
 │   ├── mock/     ← Provisional data (reclamos, casos, entidades, contenido,
 │   │               bibliotecaLegal, tiposConflicto, reglasPrioridad, patrones)
-│   ├── styles/   ← fusion-engine.css (ecosistema) + app.css (tema shippear)
+│   ├── styles/   ← fusion-engine.css (ecosistema) + app.css (tema saldoafavor)
 │   ├── components/ ← Stamp, Doc, ReclamoTicket, Barcode, TopBar, BottomNav, Icon
 │   ├── screens/  ← Home, Chat, ConfirmarDatos, Derechos, ReclamoListo,
 │   │               Seguimiento, MisReclamos, Bandeja, CasoDetalle, Patrones

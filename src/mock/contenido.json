@@ -4,8 +4,8 @@
     "label": "OFICINA DEL CONSUMIDOR — ROSARIO",
     "titleTop": "TU PLATA",
     "titleBottom": "VALE.",
-    "stamp": "YA",
-    "claimWord": "RECLAMÁ",
+    "stamp": "A FAVOR",
+    "claimWord": "SALDO",
     "sub": "Conflictos con bancos, tarjetas y billeteras virtuales. Contanos qué pasó, subí una foto o PDF del resumen y la app arma el reclamo con la norma oficial. Te acompañamos hasta que te devuelvan la plata."
   },
   "steps": [
@@ -52,7 +52,7 @@
     "nota": "LISTO PARA ENVIAR A LA ENTIDAD — PLAZO: 10 DÍAS HÁBILES (BCRA)",
     "fundamento": "El cargo impugnado no fue autorizado por el consumidor. La entidad debe acreditar la operación y responder en el plazo legal (BCRA, texto ordenado de Protección de los Usuarios de Servicios Financieros; Ley 24.240, arts. 35 y 37)."
   },
-  "avisoLegal": "Reclamá Ya no reemplaza el asesoramiento legal. En los casos rojos, la Oficina del Consumidor te atiende en persona.",
+  "avisoLegal": "Saldo a Favor no reemplaza el asesoramiento legal. En los casos rojos, la Oficina del Consumidor te atiende en persona.",
   "bandeja": {
     "titulo": "BANDEJA DE ENTRADA",
     "sub": "Casos con triage automático: verde para autoservicio, amarillo para revisión de un empleado, rojo para atención presencial. La prioridad se calcula con reglas configurables, no con IA."

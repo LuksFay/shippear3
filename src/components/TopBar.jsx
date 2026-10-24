@@ -4,7 +4,7 @@ export default function TopBar({ role, onRole, dark, onTheme }) {
   return (
     <header className="topbar">
       <div className="topbar__brand">
-        reclamá<b>ya</b>
+        saldo a<b>favor</b>
       </div>
       <span className="topbar__tag">MESA DE ENTRADA — ROSARIO</span>
       <div className="topbar__controls">

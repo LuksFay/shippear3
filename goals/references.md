@@ -1,10 +1,10 @@
-# Reclamá Ya — References
+# Saldo a Favor — References
 
 ## Visual references
 
 - **WhatsApp (familiaridad, no estética)** — la estructura del chat: burbujas
   izquierda/derecha, input abajo, confirmación de lectura. Es el patrón que cualquier
-  adulto mayor ya sabe usar. Nosotros lo pasamos por el ADN shippear: burbujas
+  adulto mayor ya sabe usar. Nosotros lo pasamos por el ADN de mesa de entrada: burbujas
   cuadradas, sellos como ticks, timestamps mono.
 - **Guía de remito / ticket de encomienda** — estructura de datos expuesta: nº de
   expediente, fecha, monto, operación. De ahí sale la jerarquía de cada "caso".
@@ -24,7 +24,7 @@
 - **Apps de bancos genéricas** — blanco frío, azul, cards redondeadas con sombra,
   "cargando…" infinito sin explicar qué pasa.
 - **Legal-tech pretencioso** — serif formal, dorado, "estimado usuario".
-- **Bots de IA sin respaldo legal** — la IA como oráculo. En Reclamá Ya la IA nunca
+- **Bots de IA sin respaldo legal** — la IA como oráculo. En Saldo a Favor la IA nunca
   genera normas ni derechos: solo clasifica y extrae datos.
 - **Chats SaaS con burbujas redondas y gradientes** — la familiaridad es de WhatsApp,
   la piel es de mesa de entrada.

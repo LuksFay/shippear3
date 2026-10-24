@@ -1,4 +1,4 @@
-# Reclamá Ya — Brand Essence
+# Saldo a Favor — Brand Essence
 
 > **Authoria:** Arcade Estudio
 > **Producto:** Defensor financiero vecinal para Rosario. El vecino cuenta su problema
@@ -8,7 +8,7 @@
 > Del otro lado, la Oficina Municipal del Consumidor recibe los casos clasificados y
 > priorizados, con triage verde/amarillo/rojo y detección de patrones para intimar
 > empresas en bloque.
-> **Nombre del proyecto en código:** shippear (repo). **Marca:** Reclamá Ya.
+> **Marca:** Saldo a Favor.
 
 ## Core values
 
