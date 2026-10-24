@@ -4,6 +4,43 @@ import { q } from "./db.js";
 import { sendLoginCode } from "./mail.js";
 
 const DNI_RE = /^\d{7,8}$/;
+const CUIT_RE = /^\d{11}$/;
+
+// Tipos de usuario: el rol se elige en el login y define el documento.
+//   vecino  (ciudadano) → DNI, 7 u 8 dígitos
+//   entidad             → CUIT/CUIL, 11 dígitos con dígito verificador válido
+export function normalizeRole(r) {
+  const v = String(r ?? "").toLowerCase();
+  if (v === "vecino" || v === "ciudadano") return "vecino";
+  if (v === "entidad") return "entidad";
+  return null;
+}
+
+export function cuitValido(c) {
+  if (!CUIT_RE.test(c)) return false;
+  const w = [5, 4, 3, 2, 7, 6, 5, 4, 3, 2];
+  const sum = w.reduce((acc, k, i) => acc + k * Number(c[i]), 0);
+  let dv = 11 - (sum % 11);
+  if (dv === 11) dv = 0;
+  if (dv === 10) return false;
+  return dv === Number(c[10]);
+}
+
+function validarDoc(role, doc) {
+  if (role === "vecino") {
+    if (!DNI_RE.test(doc)) throw new HttpError(400, "dni_invalido", "El DNI tiene que tener 7 u 8 números.");
+  } else if (!CUIT_RE.test(doc)) {
+    throw new HttpError(400, "cuit_invalido", "El CUIT/CUIL tiene que tener 11 números.");
+  } else if (!cuitValido(doc)) {
+    throw new HttpError(400, "cuit_invalido", "El CUIT/CUIL no es válido. Revisá los números.");
+  }
+}
+
+function leerRol(r) {
+  const role = normalizeRole(r);
+  if (!role) throw new HttpError(400, "rol_invalido", "Elegí si entrás como ciudadano o como entidad.");
+  return role;
+}
 const EMAIL_RE = /^[^\s@]{1,64}@[^\s@]{1,190}\.[^\s@]{2,24}$/;
 
 export class HttpError extends Error {
@@ -15,7 +52,7 @@ export class HttpError extends Error {
   }
 }
 
-export function normalizeDni(v) {
+export function normalizeDoc(v) {
   return String(v ?? "").replace(/[.\s-]/g, "");
 }
 
@@ -50,9 +87,10 @@ setInterval(() => {
   for (const [k, v] of verifyHits) if (v.every((t) => now - t > 3_600_000)) verifyHits.delete(k);
 }, 600_000).unref();
 
-export async function requestCode({ dni, email, ip }) {
-  dni = normalizeDni(dni);
-  if (!DNI_RE.test(dni)) throw new HttpError(400, "dni_invalido", "El DNI tiene que tener 7 u 8 números.");
+export async function requestCode({ role, doc, email, ip }) {
+  role = leerRol(role);
+  doc = normalizeDoc(doc);
+  validarDoc(role, doc);
   email = String(email ?? "").trim().toLowerCase();
   if (email && !EMAIL_RE.test(email)) throw new HttpError(400, "email_invalido", "Revisá el email.");
 
@@ -62,10 +100,16 @@ export async function requestCode({ dni, email, ip }) {
   );
   if (ipCount.rows[0].n >= 10) throw new HttpError(429, "demasiados_intentos", "Demasiados pedidos. Probá en un rato.");
 
-  let user = (await q("SELECT id, email FROM users WHERE dni = $1", [dni])).rows[0];
+  let user = (await q("SELECT id, email FROM users WHERE doc_number = $1 AND role = $2", [doc, role])).rows[0];
   if (!user) {
     if (!email) throw new HttpError(400, "falta_email", "Es tu primera vez: escribí tu email para mandarte el código.", { needEmail: true });
-    user = (await q("INSERT INTO users (dni, email) VALUES ($1, $2) ON CONFLICT (dni) DO UPDATE SET dni = EXCLUDED.dni RETURNING id, email", [dni, email])).rows[0];
+    user = (
+      await q(
+        `INSERT INTO users (doc_number, role, email) VALUES ($1, $2, $3)
+         ON CONFLICT (doc_number, role) DO UPDATE SET doc_number = EXCLUDED.doc_number RETURNING id, email`,
+        [doc, role, email],
+      )
+    ).rows[0];
   }
 
   const recent = await q(
@@ -96,13 +140,15 @@ export async function requestCode({ dni, email, ip }) {
   return { ok: true, email: maskEmail(user.email), minutes: config.tokenMinutes };
 }
 
-export async function verifyCode({ dni, code, ip, userAgent }) {
-  dni = normalizeDni(dni);
+export async function verifyCode({ role, doc, code, ip, userAgent }) {
+  role = leerRol(role);
+  doc = normalizeDoc(doc);
   code = String(code ?? "").replace(/\D/g, "");
-  if (!DNI_RE.test(dni) || code.length !== 6) throw new HttpError(400, "datos_invalidos", "Revisá el DNI y el código de 6 números.");
+  validarDoc(role, doc);
+  if (code.length !== 6) throw new HttpError(400, "datos_invalidos", "El código tiene 6 números.");
   if (!hitIp(ip, 30, 15 * 60_000)) throw new HttpError(429, "demasiados_intentos", "Demasiados intentos. Probá en un rato.");
 
-  const user = (await q("SELECT id, dni, email, role FROM users WHERE dni = $1", [dni])).rows[0];
+  const user = (await q("SELECT id, doc_number, email, role FROM users WHERE doc_number = $1 AND role = $2", [doc, role])).rows[0];
   const tok = user
     ? (await q(
         `SELECT id, token_hash, attempts FROM login_tokens
@@ -133,7 +179,12 @@ export async function verifyCode({ dni, code, ip, userAgent }) {
 }
 
 export function publicUser(u) {
-  return { dni: u.dni, email: maskEmail(u.email), role: u.role };
+  return {
+    doc: u.doc_number,
+    docType: u.role === "entidad" ? (/^(20|23|24|27)/.test(u.doc_number) ? "CUIL" : "CUIT") : "DNI",
+    email: maskEmail(u.email),
+    role: u.role,
+  };
 }
 
 export function readCookie(req) {
@@ -163,7 +214,7 @@ export async function currentUser(req) {
   if (!raw) return null;
   const row = (
     await q(
-      `SELECT s.id AS sid, u.id, u.dni, u.email, u.role FROM sessions s
+      `SELECT s.id AS sid, u.id, u.doc_number, u.email, u.role FROM sessions s
          JOIN users u ON u.id = s.user_id
         WHERE s.token_hash = $1 AND s.expires_at > now()`,
       [sha256(raw)],

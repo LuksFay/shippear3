@@ -2,7 +2,7 @@ import http from "node:http";
 import { assertConfig, config } from "./config.js";
 import { cleanup, migrate, q } from "./db.js";
 import { currentUser, HttpError, logout, publicUser, requestCode, sessionCookie, verifyCode } from "./auth.js";
-import { chat, transcribe } from "./chat.js";
+import { aiStatus, chat, transcribe } from "./chat.js";
 import { getProvider } from "./ai/index.js";
 
 const MAX_BODY = 12 * 1024 * 1024;
@@ -47,9 +47,11 @@ function clientIp(req) {
   return String(req.headers["x-real-ip"] || req.socket.remoteAddress || "").slice(0, 64);
 }
 
-async function requireUser(req) {
+// El rol sale SIEMPRE de la sesión en el servidor (nunca del cliente).
+async function requireUser(req, ...roles) {
   const u = await currentUser(req);
-  if (!u) throw new HttpError(401, "sin_sesion", "Tenés que entrar con tu DNI.");
+  if (!u) throw new HttpError(401, "sin_sesion", "Tenés que entrar con tu DNI o CUIT/CUIL.");
+  if (roles.length && !roles.includes(u.role)) throw new HttpError(403, "rol_no_permitido", "Esta función no está disponible para tu tipo de usuario.");
   return u;
 }
 
@@ -72,11 +74,11 @@ const routes = {
       db = true;
     } catch {}
     const p = getProvider();
-    return [db ? 200 : 503, { ok: db, db, ai: { provider: p.name, model: p.model }, version: "0.1.0" }];
+    return [db ? 200 : 503, { ok: db, db, ai: { provider: p.name, model: p.model, ...aiStatus }, version: "0.2.0" }];
   },
-  "POST /api/auth/request": async (req, body) => [200, await requestCode({ dni: body.dni, email: body.email, ip: clientIp(req) })],
+  "POST /api/auth/request": async (req, body) => [200, await requestCode({ role: body.role, doc: body.doc ?? body.dni, email: body.email, ip: clientIp(req) })],
   "POST /api/auth/verify": async (req, body) => {
-    const { cookie, user } = await verifyCode({ dni: body.dni, code: body.code, ip: clientIp(req), userAgent: req.headers["user-agent"] });
+    const { cookie, user } = await verifyCode({ role: body.role, doc: body.doc ?? body.dni, code: body.code, ip: clientIp(req), userAgent: req.headers["user-agent"] });
     return [200, { ok: true, user }, { "Set-Cookie": sessionCookie(cookie, config.sessionDays * 86400) }];
   },
   "GET /api/auth/me": async (req) => {
@@ -87,8 +89,11 @@ const routes = {
     await logout(req);
     return [200, { ok: true }, { "Set-Cookie": sessionCookie("", 0) }];
   },
-  "POST /api/chat": async (req, body) => [200, await chat(await requireUser(req), body)],
-  "POST /api/transcribe": async (req, body) => [200, await transcribe(await requireUser(req), body)],
+  // Reclamos con IA: sólo ciudadanos (vecino).
+  "POST /api/chat": async (req, body) => [200, await chat(await requireUser(req, "vecino"), body)],
+  "POST /api/transcribe": async (req, body) => [200, await transcribe(await requireUser(req, "vecino"), body)],
+  // Panel de la entidad: sólo entidades (por ahora devuelve el perfil; la bandeja real se conecta acá).
+  "GET /api/entidad/perfil": async (req) => [200, { user: publicUser(await requireUser(req, "entidad")) }],
 };
 
 const server = http.createServer(async (req, res) => {

@@ -25,6 +25,8 @@ export function createOpenAICompatible({ name, baseUrl, apiKey, model, transcrib
     if (!res.ok) {
       const err = new Error(`${name} ${res.status}: ${data?.error?.message || "error"}`);
       err.status = res.status;
+      err.code = data?.error?.code || null;
+      err.type = data?.error?.type || null;
       throw err;
     }
     const content = data.choices?.[0]?.message?.content || "{}";
@@ -47,7 +49,13 @@ export function createOpenAICompatible({ name, baseUrl, apiKey, model, transcrib
       signal: AbortSignal.timeout(60_000),
     });
     const data = await res.json().catch(() => ({}));
-    if (!res.ok) throw new Error(`${name} transcribe ${res.status}: ${data?.error?.message || "error"}`);
+    if (!res.ok) {
+      const err = new Error(`${name} transcribe ${res.status}: ${data?.error?.message || "error"}`);
+      err.status = res.status;
+      err.code = data?.error?.code || null;
+      err.type = data?.error?.type || null;
+      throw err;
+    }
     return String(data.text || "").trim();
   }
 

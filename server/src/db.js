@@ -2,13 +2,15 @@ import pg from "pg";
 import { config } from "./config.js";
 
 export const pool = new pg.Pool({ connectionString: config.databaseUrl, max: 10 });
+// Sin este handler, un reinicio de Postgres (p. ej. durante un redeploy) tumbaba la API.
+pool.on("error", (e) => console.error("[db] conexión inactiva perdida:", e.code || e.message));
 
 export const q = (text, params) => pool.query(text, params);
 
 const SCHEMA = `
 CREATE TABLE IF NOT EXISTS users (
   id               BIGSERIAL PRIMARY KEY,
-  dni              VARCHAR(8) NOT NULL UNIQUE,
+  doc_number       VARCHAR(11) NOT NULL,
   email            TEXT NOT NULL,
   role             TEXT NOT NULL DEFAULT 'vecino' CHECK (role IN ('vecino', 'entidad')),
   entidad_id       TEXT,
@@ -16,6 +18,16 @@ CREATE TABLE IF NOT EXISTS users (
   created_at       TIMESTAMPTZ NOT NULL DEFAULT now(),
   last_login_at    TIMESTAMPTZ
 );
+
+-- v2: el documento depende del rol (vecino = DNI, entidad = CUIT/CUIL); único por documento + rol.
+DO $$ BEGIN
+  IF EXISTS (SELECT 1 FROM information_schema.columns WHERE table_name = 'users' AND column_name = 'dni') THEN
+    ALTER TABLE users RENAME COLUMN dni TO doc_number;
+  END IF;
+END $$;
+ALTER TABLE users ALTER COLUMN doc_number TYPE VARCHAR(11);
+ALTER TABLE users DROP CONSTRAINT IF EXISTS users_dni_key;
+CREATE UNIQUE INDEX IF NOT EXISTS users_doc_role_uq ON users (doc_number, role);
 
 CREATE TABLE IF NOT EXISTS login_tokens (
   id          BIGSERIAL PRIMARY KEY,

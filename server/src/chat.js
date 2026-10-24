@@ -62,6 +62,40 @@ const MAX_FILE_BYTES = 8 * 1024 * 1024;
 const IMG_RE = /^data:(image\/(png|jpe?g|webp|gif));base64,/i;
 const PDF_RE = /^data:application\/pdf;base64,/i;
 
+// Último estado del proveedor, para /api/health (sin datos sensibles).
+export const aiStatus = { ok: null, error: null, at: null };
+
+// Traduce errores del proveedor a errores claros y distinguibles para la UI.
+function providerError(e, kind) {
+  aiStatus.ok = false;
+  aiStatus.at = new Date().toISOString();
+  const sinCredito = e.type === "insufficient_quota" || e.code === "insufficient_quota" || e.code === "credit_balance_exhausted";
+  if (sinCredito) {
+    aiStatus.error = "ia_sin_credito";
+    return new HttpError(503, "ia_sin_credito", "El asistente está fuera de servicio por un momento (el proveedor de IA no tiene crédito). Ya lo estamos resolviendo; probá más tarde.");
+  }
+  if (e.status === 429) {
+    aiStatus.error = "ia_ocupada";
+    return new HttpError(503, "ia_ocupada", "El asistente está muy ocupado. Esperá unos segundos y probá de nuevo.");
+  }
+  if (e.status === 401 || e.status === 403) {
+    aiStatus.error = "ia_config";
+    return new HttpError(503, "ia_config", "El asistente no está configurado correctamente. Ya lo estamos resolviendo.");
+  }
+  if (e.name === "TimeoutError" || e.name === "AbortError") {
+    aiStatus.error = "ia_timeout";
+    return new HttpError(504, "ia_timeout", "El asistente tardó demasiado. Probá de nuevo.");
+  }
+  aiStatus.error = "ia_no_disponible";
+  return new HttpError(502, "ia_no_disponible", kind === "transcribe" ? "No pude entender el audio. Probá escribirlo." : "La IA no respondió. Probá de nuevo en un momento.");
+}
+
+function providerOk() {
+  aiStatus.ok = true;
+  aiStatus.error = null;
+  aiStatus.at = new Date().toISOString();
+}
+
 async function checkQuota(userId) {
   const r = (
     await q(
@@ -116,6 +150,7 @@ export async function chat(user, body) {
   try {
     const { json, usage } = await provider.chatJson({ system: SYSTEM, messages, schema: SCHEMA });
     await logUse(user.id, "chat", provider, true, usage);
+    providerOk();
     const datos = json.datos || {};
     if (!TIPO_IDS.includes(datos.tipo)) datos.tipo = "";
     const listo = Boolean(json.listo && datos.tipo && datos.entidad && datos.monto);
@@ -123,8 +158,8 @@ export async function chat(user, body) {
   } catch (e) {
     await logUse(user.id, "chat", provider, false, null);
     if (e instanceof HttpError) throw e;
-    console.error("[chat]", e.message);
-    throw new HttpError(502, "ia_no_disponible", "La IA no respondió. Probá de nuevo en un momento.");
+    console.error("[chat]", e.status || "", e.code || "", e.message);
+    throw providerError(e, "chat");
   }
 }
 
@@ -139,10 +174,11 @@ export async function transcribe(user, body) {
   try {
     const text = await provider.transcribe({ buffer, mime: m[1], filename: `audio.${ext}` });
     await logUse(user.id, "transcribe", provider, true, null);
+    providerOk();
     return { text };
   } catch (e) {
     await logUse(user.id, "transcribe", provider, false, null);
-    console.error("[transcribe]", e.message);
-    throw new HttpError(502, "audio_no_disponible", "No pude entender el audio. Probá escribirlo.");
+    console.error("[transcribe]", e.status || "", e.code || "", e.message);
+    throw providerError(e, "transcribe");
   }
 }
