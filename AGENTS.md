@@ -22,10 +22,11 @@
 - **Fase actual:** chat del vecino con IA real vía `server/` (API propia, la clave vive sólo en el
   servidor) e ingreso con DNI (ciudadano) o CUIT/CUIL (entidad) + código por email; el rol se elige en el login y lo aplica el servidor. El resto de la data sigue en `src/mock/`.
   En el chat NO se escriben respuestas fijas en el frontend: todo sale de `/api/chat`.
-- **IA local (Broly):** `AI_PROVIDER=local` → Ollama nativo en Broly (`qwen3.5:4b`, elegido por
+- **IA:** `AI_PROVIDER=xai,local` → primero xAI Grok (`XAI_API_KEY` sólo en `/opt/shippear/.env`),
+  respaldo automático por consulta al modelo local. **IA local (Broly):** Ollama nativo en Broly (`qwen3.5:4b`, elegido por
   velocidad y español sin mezclar idiomas; también lee fotos). Llega por túnel SSH inverso
   (tarea programada `shippear-tunnel` en Broly → usuario restringido `shippear-tunnel` en Contabo,
-  puerto `172.19.0.1:11435`, sólo red Docker `shippear_net`). Broly apagado ⇒ `ia_offline`.
+  puerto `172.19.0.1:11435`, sólo red Docker `shippear_net`). Los dos caídos ⇒ `ia_offline`.
   Audio deshabilitado (`audio_no_disponible`) hasta sumar Whisper; PDF ⇒ `solo_fotos`.
 - **Stack objetivo (fase funciones, según brief):** Next.js, Supabase, Vercel AI SDK
   con Gemini (plan gratuito) + Groq de respaldo, deploy en Vercel, API pública de la

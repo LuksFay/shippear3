@@ -26,6 +26,10 @@ export const config = {
     model: env.AI_MODEL || "gpt-4.1-mini",
     transcribeModel: env.AI_TRANSCRIBE_MODEL || "gpt-4o-mini-transcribe",
     openaiKey: env.OPENAI_API_KEY || "",
+    xaiKey: env.XAI_API_KEY || "",
+    xaiModel: env.AI_XAI_MODEL || "grok-4.20-0309-non-reasoning",
+    xaiVisionModel: env.AI_XAI_VISION_MODEL || "",
+    xaiTimeoutMs: num(env.AI_XAI_TIMEOUT_MS, 30_000),
     localBaseUrl: env.AI_LOCAL_BASE_URL || "http://172.19.0.1:11435",
     localKey: env.AI_LOCAL_API_KEY || "local",
     localModel: env.AI_LOCAL_MODEL || "qwen3.5:4b",
@@ -51,7 +55,9 @@ export function assertConfig() {
   if (!config.databaseUrl) missing.push("DATABASE_URL");
   if (!config.sessionSecret || config.sessionSecret.length < 32) missing.push("SESSION_SECRET (>=32 chars)");
   if (!config.smtp.host) missing.push("SMTP_HOST");
-  if (config.ai.provider === "openai" && !config.ai.openaiKey) missing.push("OPENAI_API_KEY");
+  const chain = config.ai.provider.split(",").map((x) => x.trim());
+  if (chain.includes("openai") && !config.ai.openaiKey) missing.push("OPENAI_API_KEY");
+  if (chain.includes("xai") && !config.ai.xaiKey) missing.push("XAI_API_KEY");
   if (missing.length) console.warn(`[config] faltan variables: ${missing.join(", ")}`);
   if (!config.sessionSecret || config.sessionSecret.length < 32 || !config.databaseUrl)
     throw new Error("Configuración incompleta: SESSION_SECRET y DATABASE_URL son obligatorias");

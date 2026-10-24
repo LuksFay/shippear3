@@ -61,10 +61,10 @@ async function checkQuota(userId) {
     throw new HttpError(429, "limite_ia", "Llegaste al límite de mensajes por ahora. Probá más tarde.");
 }
 
-async function logUse(userId, kind, provider, ok, usage) {
+async function logUse(userId, kind, provider, ok, usage, used) {
   await q(
     "INSERT INTO ai_requests (user_id, kind, provider, model, ok, tokens_in, tokens_out) VALUES ($1,$2,$3,$4,$5,$6,$7)",
-    [userId, kind, provider.name, provider.model, ok, usage?.in ?? null, usage?.out ?? null],
+    [userId, kind, used?.provider || provider.name, used?.model || provider.model, ok, usage?.in ?? null, usage?.out ?? null],
   ).catch(() => {});
 }
 
@@ -102,8 +102,9 @@ export async function chat(user, body) {
   const provider = getProvider();
   const messages = buildMessages(body?.messages, body?.attachment, provider);
   try {
-    const { json, usage } = await provider.chatJson({ system: SYSTEM, messages, schema: SCHEMA });
-    await logUse(user.id, "chat", provider, true, usage);
+    const r = await provider.chatJson({ system: SYSTEM, messages, schema: SCHEMA });
+    const { json, usage } = r;
+    await logUse(user.id, "chat", provider, true, usage, r);
     providerOk();
     const datos = json.datos || {};
     if (!TIPO_IDS.includes(datos.tipo)) datos.tipo = "";

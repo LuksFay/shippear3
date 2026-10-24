@@ -54,10 +54,13 @@ Node 22 sin framework (deps: `pg`, `nodemailer`).
 - Códigos: 10 min, un solo uso, 5 intentos, guardados como HMAC; límites por usuario (documento + rol) e IP. Un mismo número puede existir como ciudadano y como entidad por separado.
 - Roles en el servidor: `/api/chat` y `/api/transcribe` sólo para ciudadanos (403 `rol_no_permitido`); `/api/entidad/*` sólo para entidades.
 - Errores de IA distinguibles: `ia_sin_credito` (503, la cuenta del proveedor no tiene saldo), `ia_ocupada` (503, rate limit), `ia_config` (503, key inválida), `ia_timeout` (504), `ia_no_disponible` (502), `ia_offline` (503, Broly/túnel apagado), `audio_no_disponible` (501), `solo_fotos` (400, el modelo local no lee PDF). `/api/health` chequea el modelo local en vivo (`ai.ok`, `ai.error`).
-- IA: `server/src/ai/` abstrae el proveedor. En producción `AI_PROVIDER=local`: Ollama en Broly
+- IA: `server/src/ai/` abstrae el proveedor. En producción `AI_PROVIDER=xai,local`: primero xAI Grok
+  (`grok-4.20-0309-non-reasoning`, texto + fotos) y, si falla (sin crédito, 402/429, 5xx, timeout,
+  key inválida), en la misma consulta pasa al respaldo local: Ollama en Broly
   (`qwen3.5:4b`, texto + fotos, prompt sólo en español) que llega a Contabo por un túnel SSH inverso
   (Broly → `shippear-tunnel@contabo`, `-R 172.19.0.1:11435:127.0.0.1:11434`, sólo visible para la red
-  Docker `shippear_net`). Si Broly está apagado el chat responde `ia_offline`. Audio deshabilitado por ahora.
+  Docker `shippear_net`). Si fallan los dos el chat responde `ia_offline`. `ai_requests` guarda qué
+  proveedor respondió; `/api/health` muestra el estado de cada uno (`ai.providers`). Audio deshabilitado por ahora.
   También `openai` y `local-openai` (LM Studio/vLLM). Ninguna clave llega al frontend.
 - Roles en DB: `vecino` / `entidad`.
 
