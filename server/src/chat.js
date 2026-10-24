@@ -123,7 +123,10 @@ export async function chat(user, body) {
     const datos = json.datos || {};
     if (!TIPO_IDS.includes(datos.tipo)) datos.tipo = "";
     const listo = Boolean(json.listo && datos.tipo && datos.entidad && datos.monto);
-    return { reply: String(json.reply || "").slice(0, 1200), pedir: json.pedir || "nada", listo, datos };
+    const used = r.provider || provider.name;
+    console.log(`[chat] respondió ${used} (${r.model || provider.model})`);
+    const ia = { xai: "Grok", local: "Qwen", openai: "OpenAI" }[used] || "IA";
+    return { reply: String(json.reply || "").slice(0, 1200), pedir: json.pedir || "nada", listo, datos, provider: used, ia };
   } catch (e) {
     await logUse(user.id, "chat", provider, false, null);
     if (e instanceof HttpError) throw e;

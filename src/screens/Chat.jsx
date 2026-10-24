@@ -51,6 +51,38 @@ export default function Chat({ nroExpediente, onConfirmar, onSinSesion }) {
   const started = useRef(false);
   const sinAudio = useRef(false);
 
+  // Teclado del celular: abierto = input enfocado Y el alto visible bajó bastante respecto del máximo
+  // visto. Cuando se cierra (enviar, elegir archivo, botón atrás) el bottom nav vuelve.
+  useEffect(() => {
+    const vv = window.visualViewport;
+    const root = document.documentElement;
+    let base = Math.max(window.innerHeight, vv?.height || 0);
+    let lastW = window.innerWidth;
+    const update = () => {
+      if (window.innerWidth !== lastW) {
+        lastW = window.innerWidth; // rotó: nueva base
+        base = 0;
+      }
+      const h = vv ? vv.height : window.innerHeight;
+      const focused = document.activeElement?.classList?.contains("chat__input");
+      if (!focused) base = Math.max(base, h, window.innerHeight);
+      root.classList.toggle("kb-open", Boolean(focused && base - h > 120));
+    };
+    const later = () => setTimeout(update, 350); // el teclado anima
+    vv?.addEventListener("resize", update);
+    window.addEventListener("resize", update);
+    document.addEventListener("focusin", later);
+    document.addEventListener("focusout", later);
+    update();
+    return () => {
+      vv?.removeEventListener("resize", update);
+      window.removeEventListener("resize", update);
+      document.removeEventListener("focusin", later);
+      document.removeEventListener("focusout", later);
+      root.classList.remove("kb-open");
+    };
+  }, []);
+
   // ¿El modelo actual escucha audios? (el local de Broly todavía no). Evita grabar para nada.
   useEffect(() => {
     api.salud().then((h) => (sinAudio.current = h?.ai?.audio === false)).catch(() => {});
@@ -76,7 +108,7 @@ export default function Chat({ nroExpediente, onConfirmar, onSinSesion }) {
       setError("");
       try {
         const r = await api.chat(historial, adjunto);
-        push({ from: "ia", text: limpio(r.reply) });
+        push({ from: "ia", text: limpio(r.reply), por: r.ia });
         if (r.datos) setDatos(r.datos);
         setListo(Boolean(r.listo));
       } catch (e) {
@@ -178,7 +210,7 @@ export default function Chat({ nroExpediente, onConfirmar, onSinSesion }) {
             m.from === "ia" ? (
               <div className="bubble bubble--ia" key={i} data-fuse="fade-up" data-fuse-auto>
                 {m.text}
-                <span className="bubble__meta">MESA DE ENTRADA — {m.time}</span>
+                <span className="bubble__meta">MESA DE ENTRADA · {m.time} · {m.por === "Grok" || m.por === "Qwen" ? m.por : "IA"}</span>
               </div>
             ) : m.file ? (
               <div className="bubble bubble--user" key={i} data-fuse="fade-up" data-fuse-auto>

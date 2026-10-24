@@ -1148,9 +1148,11 @@
   padding-bottom: var(--space-sm);
 }
 .view--chat > h1 { margin-bottom: var(--space-sm); }
-/* con el teclado abierto escondemos el bottom nav para dejar lugar a los mensajes */
-.shell--chat:has(.chat__input:focus) .bottomnav { display: none; }
-.shell--chat:has(.chat__input:focus) .main { padding-bottom: env(safe-area-inset-bottom); }
+/* con el teclado abierto escondemos el bottom nav para dejar lugar a los mensajes.
+   `kb-open` lo pone Chat.jsx midiendo el visualViewport (no alcanza con :focus: en el celular el
+   input queda enfocado después de enviar o de elegir un archivo aunque el teclado ya se cerró). */
+.kb-open .shell--chat .bottomnav { display: none; }
+.kb-open .shell--chat .main { padding-bottom: env(safe-area-inset-bottom); }
 .bubble { white-space: pre-wrap; }
 
 .bubble {
