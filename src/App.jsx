@@ -1,12 +1,9 @@
 import { useCallback, useEffect, useMemo, useState } from "react";
 import contenido from "./mock/contenido.json";
 import entidades from "./mock/entidades.json";
-import reclamosMock from "./mock/reclamos.json";
-import casosMock from "./mock/casos.json";
 import tiposConflicto from "./mock/tiposConflicto.json";
 import bibliotecaLegal from "./mock/bibliotecaLegal.json";
 import reglasPrioridad from "./mock/reglasPrioridad.json";
-import patronesMock from "./mock/patrones.json";
 import TopBar from "./components/TopBar.jsx";
 import BottomNav from "./components/BottomNav.jsx";
 import Home from "./screens/Home.jsx";
@@ -22,24 +19,18 @@ import Patrones from "./screens/Patrones.jsx";
 import Login from "./screens/Login.jsx";
 import { api } from "./lib/api.js";
 
-function hoy() {
-  return new Date().toISOString().slice(0, 10);
-}
-
-function parseMonto(s) {
-  if (typeof s === "number") return s;
-  const n = Number(String(s).replaceAll(".", "").replace(",", "."));
-  return Number.isFinite(n) ? n : 0;
-}
-
 export default function App() {
   const [user, setUser] = useState(undefined); // undefined = verificando sesión
   const [dark, setDark] = useState(false);
   const [view, setView] = useState("chat");
   const [publico, setPublico] = useState({ pantalla: "landing", rol: "vecino" }); // sin sesión: landing o ingreso
   const [filtro, setFiltro] = useState("TODOS");
-  const [reclamos, setReclamos] = useState(reclamosMock);
-  const [casos] = useState(casosMock);
+  // Sólo datos reales de la base: reclamos del vecino y casos de la entidad vinculada.
+  const [reclamos, setReclamos] = useState([]);
+  const [casos, setCasos] = useState([]);
+  const [chatReclamo, setChatReclamo] = useState(null); // { dbId, id } de la conversación abierta
+  const [resumeId, setResumeId] = useState(null); // borrador a retomar desde Mis reclamos
+  const [chatKey, setChatKey] = useState(0);
   const [datos, setDatos] = useState(null);
   const [currentReclamo, setCurrentReclamo] = useState(null);
   const [currentCaso, setCurrentCaso] = useState(null);
@@ -91,10 +82,43 @@ export default function App() {
     }
   }, [user]);
 
-  const nroExpediente = useMemo(() => {
-    const nums = reclamos.map((r) => Number(r.id.split("-").pop()) || 0);
-    return `RE-2026-${String(Math.max(0, ...nums) + 1).padStart(4, "0")}`;
-  }, [reclamos]);
+  const cargarReclamos = useCallback(() => {
+    api.reclamos().then((r) => setReclamos(r.reclamos || [])).catch(() => {});
+  }, []);
+  const cargarCasos = useCallback(() => {
+    api.casosEntidad().then((r) => setCasos(r.casos || [])).catch(() => {});
+  }, []);
+
+  useEffect(() => {
+    if (!user) return;
+    if (user.role === "entidad") cargarCasos();
+    else cargarReclamos();
+  }, [user, view, cargarReclamos, cargarCasos]);
+
+  // Patrones calculados de los casos reales (entidad + tipo, últimos 30 días).
+  const patrones = useMemo(() => {
+    const desde = Date.now() - 30 * 86400000;
+    const g = new Map();
+    for (const c of casos) {
+      if (new Date(c.fecha).getTime() < desde) continue;
+      const k = `${c.entidad}|${c.tipo}`;
+      g.set(k, { entidad: c.entidad, tipo: c.tipo, casos: (g.get(k)?.casos || 0) + 1, periodo: "30 días", delta: "—" });
+    }
+    return [...g.values()].filter((p) => p.casos >= 2).map((p) => ({ ...p, gravedad: p.casos >= 5 ? "ALTA" : "MEDIA" }));
+  }, [casos]);
+
+  const nuevoReclamo = useCallback(async () => {
+    await api.nuevaConversacion().catch(() => {});
+    setResumeId(null);
+    setChatKey((k) => k + 1);
+    setView("chat");
+  }, []);
+
+  const abrirChat = useCallback((id = null) => {
+    setResumeId(id);
+    setChatKey((k) => k + 1);
+    setView("chat");
+  }, []);
 
   const tipoActual = useMemo(
     () => tiposConflicto.find((t) => t.id === datos?.tipo) || tiposConflicto[0],
@@ -116,32 +140,27 @@ export default function App() {
     });
   }, []);
 
-  const handleArmar = useCallback(() => {
-    if (!datos) return;
+  const handleArmar = useCallback(async () => {
+    if (!datos || !chatReclamo) return;
     const entidad = entidades.find(
       (e) => e.nombre.toLowerCase() === datos.entidad.toLowerCase(),
     );
     const fundamento = `${tipoActual.derecho} Normativa: ${normasActuales
       .map((n) => `${n.nombre} (${n.articulos})`)
       .join("; ")}.`;
-    const reclamo = {
-      id: nroExpediente,
-      fecha: hoy(),
-      entidad: datos.entidad,
-      categoria: entidad?.categoria || "BANCOS",
-      tipo: datos.tipo,
-      operacion: datos.operacion,
-      monto: parseMonto(datos.monto),
-      estado: "EN TRÁMITE",
-      diasPlazo: 1,
-      vencido: false,
-      resumen: tipoActual.nombre,
-      fundamento,
-    };
-    setReclamos((prev) => [reclamo, ...prev]);
-    setCurrentReclamo(reclamo);
-    setView("listo");
-  }, [datos, tipoActual, normasActuales, nroExpediente]);
+    try {
+      const { reclamo } = await api.presentar(chatReclamo.dbId, { ...datos, categoria: entidad?.categoria || "BANCOS", resumen: tipoActual.nombre }, fundamento);
+      setCurrentReclamo(reclamo);
+      setChatReclamo(null);
+      setResumeId(null);
+      setChatKey((k) => k + 1); // el próximo chat arranca de cero
+      cargarReclamos();
+      setView("listo");
+    } catch (e) {
+      if (e.status === 401) return setUser(null);
+      alert(e.message || "No pude guardar el reclamo. Probá de nuevo.");
+    }
+  }, [datos, chatReclamo, tipoActual, normasActuales, cargarReclamos]);
 
   const handleNav = useCallback(
     (id) => {
@@ -179,7 +198,9 @@ export default function App() {
       case "chat":
         screen = (
           <Chat
-            nroExpediente={nroExpediente}
+            key={chatKey}
+            resumeId={resumeId}
+            onReclamo={setChatReclamo}
             onConfirmar={(d) => { setDatos(d); setView("confirmar"); }}
             onSinSesion={() => { setUser(null); irAlIngreso("vecino"); }}
           />
@@ -206,7 +227,7 @@ export default function App() {
             reclamo={currentReclamo}
             contenido={contenido}
             onSeguimiento={() => setView("seguimiento")}
-            onNuevo={() => setView("chat")}
+            onNuevo={nuevoReclamo}
           />
         ) : null;
         break;
@@ -216,7 +237,7 @@ export default function App() {
             reclamo={currentReclamo}
             contenido={contenido}
             onVolver={() => setView("mis")}
-            onNuevo={() => setView("chat")}
+            onNuevo={nuevoReclamo}
           />
         ) : null;
         break;
@@ -224,15 +245,17 @@ export default function App() {
         screen = (
           <MisReclamos
             reclamos={reclamos}
-            onNuevo={() => setView("chat")}
-            onOpen={(r) => { setCurrentReclamo(r); setView("seguimiento"); }}
+            onNuevo={nuevoReclamo}
+            onOpen={(r) => (r.borrador ? abrirChat(r.dbId) : (setCurrentReclamo(r), setView("seguimiento")))}
           />
         );
         break;
       default:
         screen = (
           <Chat
-            nroExpediente={nroExpediente}
+            key={chatKey}
+            resumeId={resumeId}
+            onReclamo={setChatReclamo}
             onConfirmar={(d) => { setDatos(d); setView("confirmar"); }}
             onSinSesion={() => { setUser(null); irAlIngreso("vecino"); }}
           />
@@ -249,7 +272,7 @@ export default function App() {
       />
     );
   } else if (view === "patrones") {
-    screen = <Patrones patrones={patronesMock} contenido={contenido} onVolver={() => setView("bandeja")} />;
+    screen = <Patrones patrones={patrones} contenido={contenido} onVolver={() => setView("bandeja")} />;
   } else {
     screen = (
       <Bandeja

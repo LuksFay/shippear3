@@ -28,7 +28,13 @@ export const api = {
   pedirCodigo: (role, doc, email) => call("/auth/request", { method: "POST", body: { role, doc, email } }),
   verificar: (role, doc, code) => call("/auth/verify", { method: "POST", body: { role, doc, code } }),
   salir: () => call("/auth/logout", { method: "POST" }),
-  chat: (messages, attachment) => call("/chat", { method: "POST", body: { messages, attachment } }),
+  // El historial vive en el servidor: se manda sólo el mensaje nuevo (texto, audio transcripto o adjunto).
+  chat: (body) => call("/chat", { method: "POST", body }),
+  conversacion: (id) => call(`/conversacion${id ? `?id=${encodeURIComponent(id)}` : ""}`),
+  nuevaConversacion: () => call("/conversacion/nueva", { method: "POST" }),
+  reclamos: () => call("/reclamos"),
+  presentar: (id, datos, fundamento) => call("/reclamos/presentar", { method: "POST", body: { id, datos, fundamento } }),
+  casosEntidad: () => call("/entidad/casos"),
   transcribir: (dataUrl) => call("/transcribe", { method: "POST", body: { dataUrl } }),
 };
 
@@ -40,3 +46,24 @@ export function fileToDataUrl(file) {
     r.readAsDataURL(file);
   });
 }
+
+// Miniatura JPEG chica (máx. 320 px) para volver a mostrar la foto al recargar; el original no se guarda.
+export function miniatura(dataUrl, max = 320) {
+  return new Promise((resolve) => {
+    const img = new Image();
+    img.onload = () => {
+      const k = Math.min(1, max / Math.max(img.width, img.height));
+      const c = document.createElement("canvas");
+      c.width = Math.round(img.width * k);
+      c.height = Math.round(img.height * k);
+      c.getContext("2d").drawImage(img, 0, 0, c.width, c.height);
+      resolve(c.toDataURL("image/jpeg", 0.7));
+    };
+    img.onerror = () => resolve(null);
+    img.src = dataUrl;
+  });
+}
+
+// Hora 24 h (es-AR).
+export const hora24 = (d = new Date()) =>
+  new Date(d).toLocaleTimeString("es-AR", { hour: "2-digit", minute: "2-digit", hour12: false });

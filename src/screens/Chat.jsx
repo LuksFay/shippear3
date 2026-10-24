@@ -1,9 +1,11 @@
 import { useCallback, useEffect, useRef, useState } from "react";
 import Icon from "../components/Icon.jsx";
-import { api, fileToDataUrl } from "../lib/api.js";
+import { api, fileToDataUrl, hora24, miniatura } from "../lib/api.js";
 
-// Chat agéntico: TODAS las respuestas vienen del backend (/api/chat → modelo de IA).
-// Acá no hay textos de respuesta fijos ni datos simulados.
+// Chat agéntico: las respuestas vienen del backend (/api/chat → modelo de IA). El historial y la memoria
+// del caso viven en el servidor (Postgres): al recargar o entrar desde otro dispositivo sigue la misma charla.
+// Lo único fijo es el saludo de bienvenida, que NO es de la IA (no se genera ni se le manda al modelo).
+export const BIENVENIDA = "Hola, soy Saldo a Favor. Contame qué te pasó con el banco, la tarjeta o la billetera. Podés escribir o mandar un audio.";
 
 const MAX_MB = 8;
 
@@ -27,16 +29,18 @@ const ERRORES = {
   rol_no_permitido: "El chat de reclamos es sólo para ciudadanos. Entrá con tu DNI.",
 };
 
-function metaHora() {
-  return new Date().toLocaleTimeString("es-AR", { hour: "2-digit", minute: "2-digit" });
-}
+const metaHora = (d) => hora24(d);
 
-const aHistorial = (msgs) =>
-  msgs
-    .filter((m) => m.text && (m.from === "ia" || m.from === "user"))
-    .map((m) => ({ role: m.from === "ia" ? "assistant" : "user", content: m.text }));
+// Mensaje guardado en el servidor → burbuja.
+const deServidor = (m) => {
+  const base = { from: m.from, text: m.text, por: m.por, time: metaHora(m.at) };
+  if (m.kind === "archivo" && m.adjunto)
+    return { ...base, file: { name: m.adjunto.name, isPdf: m.adjunto.tipo === "pdf", preview: previewSegura(m.adjunto.preview || "") } };
+  if (m.kind === "audio") return { ...base, audio: m.adjunto?.seg || 1 };
+  return base;
+};
 
-export default function Chat({ nroExpediente, onConfirmar, onSinSesion }) {
+export default function Chat({ resumeId, onConfirmar, onSinSesion, onReclamo }) {
   const [msgs, setMsgs] = useState([]);
   const [input, setInput] = useState("");
   const [typing, setTyping] = useState(false);
@@ -50,6 +54,10 @@ export default function Chat({ nroExpediente, onConfirmar, onSinSesion }) {
   const recRef = useRef(null);
   const started = useRef(false);
   const cancelado = useRef(false);
+  const [reclamo, setReclamo] = useState(null); // { dbId, id } cuando ya hay un mensaje del vecino
+  const reclamoRef = useRef(null);
+  const [cargando, setCargando] = useState(true);
+  const [reintentable, setReintentable] = useState(false);
   const [seg, setSeg] = useState(0);
 
   // Teclado del celular: abierto = input enfocado Y el alto visible bajó bastante respecto del máximo
@@ -99,46 +107,96 @@ export default function Chat({ nroExpediente, onConfirmar, onSinSesion }) {
   }, [msgs, typing, listo, error]);
 
   const push = useCallback((m) => {
-    const next = [...msgsRef.current, { ...m, time: metaHora() }];
+    const next = [...msgsRef.current, { time: metaHora(), ...m }];
     msgsRef.current = next;
     setMsgs(next);
     return next;
   }, []);
 
+  const fijarReclamo = useCallback(
+    (r) => {
+      if (!r) return;
+      reclamoRef.current = r;
+      setReclamo(r);
+      onReclamo?.(r);
+    },
+    [onReclamo],
+  );
+
+  // Manda UN mensaje nuevo (o reintenta el último sin respuesta). El contexto lo arma el servidor.
   const preguntar = useCallback(
-    async (historial, adjunto) => {
+    async (payload) => {
       busy.current = true;
       setTyping(true);
       setError("");
+      setReintentable(false);
       try {
-        const r = await api.chat(historial, adjunto);
+        const r = await api.chat({ reclamoId: reclamoRef.current?.dbId, ...payload });
+        fijarReclamo(r.reclamo);
         push({ from: "ia", text: limpio(r.reply), por: r.ia });
         if (r.datos) setDatos(r.datos);
         setListo(Boolean(r.listo));
       } catch (e) {
         if (e.status === 401) return onSinSesion?.();
+        if (e.data?.reclamo) fijarReclamo(e.data.reclamo);
+        setReintentable(Boolean(e.data?.reintentable));
         setError(ERRORES[e.code] || e.message || "La IA no respondió. Probá de nuevo en un momento.");
       } finally {
         setTyping(false);
         busy.current = false;
       }
     },
-    [push, onSinSesion],
+    [push, onSinSesion, fijarReclamo],
   );
 
-  // Saludo inicial: también lo genera la IA.
+  // Al entrar: se restaura la conversación guardada (sin llamar a la IA). El saludo es fijo.
   useEffect(() => {
     if (started.current) return;
     started.current = true;
-    preguntar([]);
-  }, [preguntar]);
+    api
+      .conversacion(resumeId)
+      .then(({ reclamo: r, mensajes }) => {
+        if (r) {
+          fijarReclamo({ dbId: r.dbId, id: r.id });
+          const ms = mensajes.map(deServidor);
+          msgsRef.current = ms;
+          setMsgs(ms);
+          const d = r.datos || {};
+          setDatos({ tipo: d.tipo || "", entidad: d.entidad || "", monto: d.monto || "", fecha: d.fecha || "", operacion: d.operacion || "" });
+          setListo(Boolean(r.listo));
+          if (ms.length && ms[ms.length - 1].from === "user") setReintentable(true);
+        }
+      })
+      .catch((e) => e.status === 401 && onSinSesion?.())
+      .finally(() => setCargando(false));
+  }, [resumeId, fijarReclamo, onSinSesion]);
+
+  // "Nueva conversación": la actual queda guardada en Mis reclamos y el contexto arranca de cero.
+  const nuevaConversacion = async () => {
+    if (busy.current) return;
+    try {
+      await api.nuevaConversacion();
+    } catch (e) {
+      if (e.status === 401) return onSinSesion?.();
+    }
+    reclamoRef.current = null;
+    setReclamo(null);
+    onReclamo?.(null);
+    msgsRef.current = [];
+    setMsgs([]);
+    setDatos(null);
+    setListo(false);
+    setError("");
+    setReintentable(false);
+    setInput("");
+  };
 
   const enviarTexto = () => {
     const t = input.trim();
     if (!t || busy.current) return;
     setInput("");
-    const next = push({ from: "user", text: limpio(t) });
-    preguntar(aHistorial(next));
+    push({ from: "user", text: limpio(t) });
+    preguntar({ text: t });
   };
 
   const subirArchivo = async (file) => {
@@ -148,8 +206,10 @@ export default function Chat({ nroExpediente, onConfirmar, onSinSesion }) {
     busy.current = true;
     try {
       const dataUrl = await fileToDataUrl(file);
-      const next = push({ from: "user", file: { name: file.name, isPdf: file.type === "application/pdf", preview: previewSegura(dataUrl) } });
-      await preguntar(aHistorial(next), { name: file.name, dataUrl });
+      const isPdf = file.type === "application/pdf";
+      const preview = isPdf ? null : await miniatura(dataUrl);
+      push({ from: "user", file: { name: file.name, isPdf, preview: previewSegura(preview || "") || previewSegura(dataUrl) } });
+      await preguntar({ attachment: { name: file.name, dataUrl, preview } });
     } catch {
       busy.current = false;
       setError("No pude leer el archivo.");
@@ -203,8 +263,8 @@ export default function Chat({ nroExpediente, onConfirmar, onSinSesion }) {
           const { text } = await api.transcribir(dataUrl);
           sacarProvisoria();
           if (!text) throw new Error("No se entendió el audio. Probá de nuevo o escribilo.");
-          const next = push({ from: "user", text: limpio(text), audio: seg });
-          await preguntar(aHistorial(next));
+          push({ from: "user", text: limpio(text), audio: seg });
+          await preguntar({ text, audio: { seg } });
         } catch (e) {
           sacarProvisoria();
           busy.current = false;
@@ -223,18 +283,36 @@ export default function Chat({ nroExpediente, onConfirmar, onSinSesion }) {
 
   return (
     <div className="view view--app view--chat">
-      <span className="view__kicker">TRÁMITE Nº {nroExpediente}</span>
-      <h1>
-        CONTAME QUÉ <em>PASÓ</em>
-      </h1>
+      <div className="chat__head">
+        <div>
+          {reclamo && <span className="view__kicker">TRÁMITE Nº {reclamo.id}</span>}
+          <h1>
+            CONTAME QUÉ <em>PASÓ</em>
+          </h1>
+        </div>
+        {msgs.length > 0 && (
+          <button type="button" className="btn btn--ghost chat__nueva" onClick={nuevaConversacion} disabled={typing}>
+            <Icon name="plus" size={14} /> NUEVA CONVERSACIÓN
+          </button>
+        )}
+      </div>
 
       <div className="chat">
         <div className="chat__msgs" ref={msgsBoxRef} aria-live="polite" data-fuse-container>
+          <div className="bubble bubble--ia bubble--bienvenida">
+            {BIENVENIDA}
+            <span className="bubble__meta">SALDO A FAVOR</span>
+          </div>
+          {cargando && (
+            <div className="bubble bubble--ia">
+              <span className="typing"><i /><i /><i /></span>
+            </div>
+          )}
           {msgs.map((m, i) =>
             m.from === "ia" ? (
               <div className="bubble bubble--ia" key={i} data-fuse="fade-up" data-fuse-auto>
                 {m.text}
-                <span className="bubble__meta">MESA DE ENTRADA · {m.time} · {m.por === "Grok" || m.por === "Qwen" ? m.por : "IA"}</span>
+                <span className="bubble__meta">SALDO A FAVOR · {m.time} · {m.por === "Grok" || m.por === "Qwen" ? m.por : "IA"}</span>
               </div>
             ) : m.file ? (
               <div className="bubble bubble--user" key={i} data-fuse="fade-up" data-fuse-auto>
@@ -263,8 +341,8 @@ export default function Chat({ nroExpediente, onConfirmar, onSinSesion }) {
           {error && (
             <div className="bubble bubble--log" role="alert">
               <div className="bubble__line--active">{error}</div>
-              {!typing && (msgs.length === 0 || msgs[msgs.length - 1].from === "user") && (
-                <button type="button" className="btn btn--ghost" onClick={() => preguntar(aHistorial(msgsRef.current))}>
+              {!typing && reintentable && msgs.length > 0 && msgs[msgs.length - 1].from === "user" && (
+                <button type="button" className="btn btn--ghost" onClick={() => preguntar({ reintentar: true })}>
                   REINTENTAR
                 </button>
               )}

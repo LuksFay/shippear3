@@ -1697,3 +1697,8 @@
 
 /* Audio mientras se transcribe */
 .bubble--user.is-pending { opacity: .6; font-style: italic; }
+
+/* Chat: encabezado con "Nueva conversación" */
+.chat__head { display: flex; align-items: flex-end; justify-content: space-between; gap: 0.75rem; flex-wrap: wrap; }
+.chat__head h1 { margin-bottom: 0; }
+.chat__nueva { font-size: 0.72rem; padding: 0.45rem 0.7rem; display: inline-flex; align-items: center; gap: 0.35rem; white-space: nowrap; }

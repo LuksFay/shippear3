@@ -53,7 +53,7 @@ export default function ReclamoTicket({ reclamo, onOpen, tag }) {
           <Barcode />
           {onOpen && (
             <button type="button" className="btn btn--ghost" onClick={() => onOpen(reclamo)}>
-              {plazo || "VER DETALLE"}
+              {reclamo.borrador ? "CONTINUAR" : plazo || "VER DETALLE"}
             </button>
           )}
         </div>
