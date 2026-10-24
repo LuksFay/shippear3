@@ -3,6 +3,7 @@ import { q } from "./db.js";
 import { getProvider } from "./ai/index.js";
 import { HttpError } from "./auth.js";
 import { SYSTEM, SCHEMA, TIPO_IDS } from "./prompt.js";
+import { readPdf } from "./pdf.js";
 
 const MAX_HISTORY = 24;
 const MAX_TEXT = 2000;
@@ -68,7 +69,7 @@ async function logUse(userId, kind, provider, ok, usage, used) {
   ).catch(() => {});
 }
 
-function buildMessages(history, attachment, provider) {
+async function buildMessages(history, attachment, provider) {
   const msgs = (Array.isArray(history) ? history : [])
     .slice(-MAX_HISTORY)
     .filter((m) => m && (m.role === "user" || m.role === "assistant") && typeof m.content === "string")
@@ -79,19 +80,32 @@ function buildMessages(history, attachment, provider) {
     const approxBytes = Math.floor((dataUrl.length - dataUrl.indexOf(",") - 1) * 0.75);
     if (approxBytes > MAX_FILE_BYTES) throw new HttpError(413, "archivo_grande", "El archivo es muy grande (máx. 8 MB).");
     if (!provider.supportsFiles) throw new HttpError(400, "sin_archivos", "Este modelo todavía no puede leer archivos.");
-    if (provider.supportsFiles === "images" && PDF_RE.test(dataUrl))
-      throw new HttpError(400, "solo_fotos", "Por ahora no puedo leer PDF. Mandame una foto o captura del resumen.");
-    const name = String(attachment.name || "resumen").slice(0, 120);
-    let part;
-    if (IMG_RE.test(dataUrl)) part = { type: "image_url", image_url: { url: dataUrl } };
-    else if (PDF_RE.test(dataUrl)) part = { type: "file", file: { filename: name.endsWith(".pdf") ? name : `${name}.pdf`, file_data: dataUrl } };
-    else throw new HttpError(400, "archivo_invalido", "Subí una foto (JPG, PNG) o un PDF.");
-    const text = "Te adjunto el resumen. Leelo y extraé los datos.";
+    let parts;
+    if (IMG_RE.test(dataUrl)) {
+      parts = [{ type: "text", text: "Te adjunto el resumen. Leelo y extraé los datos." }, { type: "image_url", image_url: { url: dataUrl } }];
+    } else if (PDF_RE.test(dataUrl)) {
+      // El PDF se lee en el servidor: texto si lo tiene; si es un escaneo, las primeras páginas como imágenes.
+      let pdf;
+      try {
+        pdf = await readPdf(Buffer.from(dataUrl.slice(dataUrl.indexOf(",") + 1), "base64"));
+      } catch (e) {
+        console.error("[pdf]", e.message);
+        throw new HttpError(400, "pdf_invalido", "No pude abrir el PDF. Probá con una foto o captura del resumen.");
+      }
+      if (pdf.text) {
+        parts = [{ type: "text", text: `Te adjunto el resumen en PDF (${pdf.pages} pág.). Este es su texto; leelo y extraé los datos:\n"""\n${pdf.text}\n"""` }];
+      } else if (pdf.images.length) {
+        parts = [
+          { type: "text", text: `Te adjunto el resumen en PDF escaneado (${pdf.pages} pág.; van las primeras ${pdf.images.length} como imagen). Leelo y extraé los datos.` },
+          ...pdf.images.map((url) => ({ type: "image_url", image_url: { url } })),
+        ];
+      } else throw new HttpError(400, "pdf_vacio", "El PDF parece vacío. Probá con una foto o captura del resumen.");
+    } else throw new HttpError(400, "archivo_invalido", "Subí una foto (JPG, PNG) o un PDF.");
     const last = msgs[msgs.length - 1];
     if (last && last.role === "user") {
-      msgs[msgs.length - 1] = { role: "user", content: [{ type: "text", text: last.content || text }, part] };
+      msgs[msgs.length - 1] = { role: "user", content: [{ type: "text", text: last.content }, ...parts] };
     } else {
-      msgs.push({ role: "user", content: [{ type: "text", text }, part] });
+      msgs.push({ role: "user", content: parts });
     }
   }
   return msgs;
@@ -100,7 +114,7 @@ function buildMessages(history, attachment, provider) {
 export async function chat(user, body) {
   await checkQuota(user.id);
   const provider = getProvider();
-  const messages = buildMessages(body?.messages, body?.attachment, provider);
+  const messages = await buildMessages(body?.messages, body?.attachment, provider);
   try {
     const r = await provider.chatJson({ system: SYSTEM, messages, schema: SCHEMA });
     const { json, usage } = r;

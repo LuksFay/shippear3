@@ -27,7 +27,7 @@
   velocidad y español sin mezclar idiomas; también lee fotos). Llega por túnel SSH inverso
   (tarea programada `shippear-tunnel` en Broly → usuario restringido `shippear-tunnel` en Contabo,
   puerto `172.19.0.1:11435`, sólo red Docker `shippear_net`). Los dos caídos ⇒ `ia_offline`.
-  Audio deshabilitado (`audio_no_disponible`) hasta sumar Whisper; PDF ⇒ `solo_fotos`.
+  Audio deshabilitado (`audio_no_disponible`) hasta sumar Whisper; los PDF se leen en el servidor (texto con pdftotext; si es escaneo, hasta 3 páginas como imagen).
 - **Stack objetivo (fase funciones, según brief):** Next.js, Supabase, Vercel AI SDK
   con Gemini (plan gratuito) + Groq de respaldo, deploy en Vercel, API pública de la
   Central de Deudores del BCRA, Claude Code.

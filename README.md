@@ -53,7 +53,7 @@ Node 22 sin framework (deps: `pg`, `nodemailer`).
 
 - Códigos: 10 min, un solo uso, 5 intentos, guardados como HMAC; límites por usuario (documento + rol) e IP. Un mismo número puede existir como ciudadano y como entidad por separado.
 - Roles en el servidor: `/api/chat` y `/api/transcribe` sólo para ciudadanos (403 `rol_no_permitido`); `/api/entidad/*` sólo para entidades.
-- Errores de IA distinguibles: `ia_sin_credito` (503, la cuenta del proveedor no tiene saldo), `ia_ocupada` (503, rate limit), `ia_config` (503, key inválida), `ia_timeout` (504), `ia_no_disponible` (502), `ia_offline` (503, Broly/túnel apagado), `audio_no_disponible` (501), `solo_fotos` (400, el modelo local no lee PDF). `/api/health` chequea el modelo local en vivo (`ai.ok`, `ai.error`).
+- Errores de IA distinguibles: `ia_sin_credito` (503, la cuenta del proveedor no tiene saldo), `ia_ocupada` (503, rate limit), `ia_config` (503, key inválida), `ia_timeout` (504), `ia_no_disponible` (502), `ia_offline` (503, Broly/túnel apagado), `audio_no_disponible` (501), `pdf_invalido` / `pdf_vacio` (400). `/api/health` chequea el modelo local en vivo (`ai.ok`, `ai.error`).
 - IA: `server/src/ai/` abstrae el proveedor. En producción `AI_PROVIDER=xai,local`: primero xAI Grok
   (`grok-4.20-0309-non-reasoning`, texto + fotos) y, si falla (sin crédito, 402/429, 5xx, timeout,
   key inválida), en la misma consulta pasa al respaldo local: Ollama en Broly

@@ -1,5 +1,6 @@
 # API de Saldo a Favor. Contexto de build: raíz del repo.
 FROM node:22-alpine
+RUN apk add --no-cache poppler-utils
 WORKDIR /app
 ENV NODE_ENV=production
 COPY server/package.json server/package-lock.json ./
