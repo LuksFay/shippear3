@@ -39,13 +39,13 @@ async function pageCount(buf) {
 }
 
 // Devuelve { text, images: [dataUrl], pages }
-export async function readPdf(buf) {
+export async function readPdf(buf, opts = {}) {
   const pages = await pageCount(buf).catch(() => 1);
   const raw = (await run("pdftotext", ["-q", "-layout", "-enc", "UTF-8", "-l", String(MAX_TEXT_PAGES), "fd://0", "-"], buf)).toString("utf8");
   const text = raw.replace(/[ \t]+/g, " ").replace(/\n{3,}/g, "\n\n").trim();
   if (text.replace(/\s/g, "").length >= MIN_TEXT_CHARS) return { text: text.slice(0, MAX_TEXT_CHARS), images: [], pages };
   const images = [];
-  for (let i = 1; i <= Math.min(pages, MAX_IMG_PAGES); i++) {
+  for (let i = 1; i <= Math.min(pages, Math.max(1, Math.min(MAX_IMG_PAGES, Number(opts.maxImgPages) || MAX_IMG_PAGES))); i++) {
     const png = await run("pdftoppm", ["-q", "-png", "-r", String(DPI), "-f", String(i), "-l", String(i), "-singlefile", "fd://0"], buf);
     images.push(`data:image/png;base64,${png.toString("base64")}`);
   }

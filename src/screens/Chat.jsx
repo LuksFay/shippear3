@@ -1,13 +1,16 @@
 import { useCallback, useEffect, useRef, useState } from "react";
 import Icon from "../components/Icon.jsx";
-import { api, fileToDataUrl, hora24, miniatura } from "../lib/api.js";
+import { api, fileToDataUrl, hora24, miniatura, optimizarFoto } from "../lib/api.js";
 
 // Chat agéntico: las respuestas vienen del backend (/api/chat → modelo de IA). El historial y la memoria
 // del caso viven en el servidor (Postgres): al recargar o entrar desde otro dispositivo sigue la misma charla.
 // Lo único fijo es el saludo de bienvenida, que NO es de la IA (no se genera ni se le manda al modelo).
 export const BIENVENIDA = "Hola, soy Saldo a Favor. Contame qué te pasó con el banco, la tarjeta o la billetera. Podés escribir o mandar un audio.";
 
-const MAX_MB = 8;
+const MAX_MB = 8; // por archivo
+export const MAX_ARCHIVOS = 6; // por mensaje
+const MAX_TOTAL_MB = 10; // entre todos los archivos de un mensaje (lo valida también el servidor)
+const dataUrlBytes = (u) => Math.floor((u.length - u.indexOf(",") - 1) * 0.75);
 
 // Todo se renderiza como TEXTO (React escapa HTML; nunca usamos dangerouslySetInnerHTML).
 // Además sacamos caracteres de control y de override bidi que sirven para engañar visualmente.
@@ -34,8 +37,10 @@ const metaHora = (d) => hora24(d);
 // Mensaje guardado en el servidor → burbuja.
 const deServidor = (m) => {
   const base = { from: m.from, text: m.text, por: m.por, time: metaHora(m.at) };
-  if (m.kind === "archivo" && m.adjunto)
-    return { ...base, file: { name: m.adjunto.name, isPdf: m.adjunto.tipo === "pdf", preview: previewSegura(m.adjunto.preview || "") } };
+  if (m.kind === "archivo" && m.adjunto) {
+    const lista = Array.isArray(m.adjunto.archivos) ? m.adjunto.archivos : [m.adjunto];
+    return { ...base, files: lista.slice(0, MAX_ARCHIVOS).map((a) => ({ name: a.name, isPdf: a.tipo === "pdf", preview: previewSegura(a.preview || "") })) };
+  }
   if (m.kind === "audio") return { ...base, audio: m.adjunto?.seg || 1 };
   return base;
 };
@@ -59,6 +64,10 @@ export default function Chat({ resumeId, onConfirmar, onSinSesion, onReclamo }) 
   const [cargando, setCargando] = useState(true);
   const [reintentable, setReintentable] = useState(false);
   const [seg, setSeg] = useState(0);
+  const [pendientes, setPendientes] = useState([]); // adjuntos elegidos que todavía no se mandaron
+  const pendRef = useRef([]);
+  const [leyendo, setLeyendo] = useState(false);
+  const [arrastrando, setArrastrando] = useState(false);
 
   // Teclado del celular: abierto = input enfocado Y el alto visible bajó bastante respecto del máximo
   // visto. Cuando se cierra (enviar, elegir archivo, botón atrás) el bottom nav vuelve.
@@ -189,34 +198,76 @@ export default function Chat({ resumeId, onConfirmar, onSinSesion, onReclamo }) 
     setError("");
     setReintentable(false);
     setInput("");
+    fijarPendientes([]);
   };
 
+  const fijarPendientes = (lista) => {
+    pendRef.current = lista;
+    setPendientes(lista);
+  };
+
+  // Manda en UN mensaje el texto escrito y todos los adjuntos pendientes.
   const enviarTexto = () => {
     // Grabando: el botón Enviar corta la grabación y manda el audio (un solo toque).
     if (grabando) return recRef.current?.stop();
     const t = input.trim();
-    if (!t || busy.current) return;
+    const adj = pendRef.current;
+    if ((!t && !adj.length) || busy.current || leyendo) return;
     setInput("");
+    if (adj.length) {
+      fijarPendientes([]);
+      push({ from: "user", text: t ? limpio(t) : "", files: adj.map((a) => ({ name: a.name, isPdf: a.isPdf, preview: previewSegura(a.preview || "") })) });
+      preguntar({ ...(t ? { text: t } : {}), attachments: adj.map((a) => ({ name: a.name, dataUrl: a.dataUrl, preview: a.preview })) });
+      return;
+    }
     push({ from: "user", text: limpio(t) });
     preguntar({ text: t });
   };
 
-  const subirArchivo = async (file) => {
-    if (!file || busy.current) return;
-    if (file.size > MAX_MB * 1024 * 1024) return setError(`El archivo pesa más de ${MAX_MB} MB.`);
-    if (!/^image\/|application\/pdf/.test(file.type)) return setError("Subí una foto (JPG, PNG) o un PDF.");
-    busy.current = true;
-    try {
-      const dataUrl = await fileToDataUrl(file);
-      const isPdf = file.type === "application/pdf";
-      const preview = isPdf ? null : await miniatura(dataUrl);
-      push({ from: "user", file: { name: file.name, isPdf, preview: previewSegura(preview || "") || previewSegura(dataUrl) } });
-      await preguntar({ attachment: { name: file.name, dataUrl, preview } });
-    } catch {
-      busy.current = false;
-      setError("No pude leer el archivo.");
+  // Suma archivos a la lista de pendientes (elegidos juntos, de a uno o arrastrados). No manda nada todavía.
+  const agregarArchivos = async (fileList) => {
+    const files = Array.from(fileList || []);
+    if (!files.length || busy.current) return;
+    setError("");
+    const lugar = MAX_ARCHIVOS - pendRef.current.length;
+    if (lugar <= 0) return setError(`Podés mandar hasta ${MAX_ARCHIVOS} archivos por mensaje.`);
+    const avisos = [];
+    if (files.length > lugar) avisos.push(`Sólo se agregaron ${lugar}: el máximo es ${MAX_ARCHIVOS} archivos por mensaje.`);
+    setLeyendo(true);
+    const nuevos = [];
+    let total = pendRef.current.reduce((s, a) => s + a.bytes, 0);
+    for (const file of files.slice(0, lugar)) {
+      const isPdf = file.type === "application/pdf" || /\.pdf$/i.test(file.name);
+      if (!isPdf && !/^image\//.test(file.type)) {
+        avisos.push(`"${limpio(file.name).slice(0, 60)}" no es una foto ni un PDF.`);
+        continue;
+      }
+      try {
+        let dataUrl = await fileToDataUrl(file);
+        if (isPdf) dataUrl = dataUrl.replace(/^data:[^;,]*/, "data:application/pdf");
+        else dataUrl = await optimizarFoto(dataUrl, file.type, file.size); // las fotos del celular se achican antes de subir
+        const bytes = dataUrlBytes(dataUrl);
+        if (!dataUrl || bytes > MAX_MB * 1024 * 1024) {
+          avisos.push(`"${limpio(file.name).slice(0, 60)}" pesa más de ${MAX_MB} MB.`);
+          continue;
+        }
+        if (total + bytes > MAX_TOTAL_MB * 1024 * 1024) {
+          avisos.push(`"${limpio(file.name).slice(0, 60)}" no entra: entre todos pasan los ${MAX_TOTAL_MB} MB. Mandalo en otro mensaje.`);
+          continue;
+        }
+        total += bytes;
+        const preview = isPdf ? null : await miniatura(dataUrl);
+        nuevos.push({ id: `${Date.now()}-${Math.random()}`, name: limpio(file.name).slice(0, 80) || "adjunto", isPdf, dataUrl, preview, bytes });
+      } catch {
+        avisos.push(`No pude leer "${limpio(file.name).slice(0, 60)}".`);
+      }
     }
+    fijarPendientes([...pendRef.current, ...nuevos].slice(0, MAX_ARCHIVOS));
+    setLeyendo(false);
+    if (avisos.length) setError(avisos.join(" "));
   };
+
+  const quitarPendiente = (id) => fijarPendientes(pendRef.current.filter((a) => a.id !== id));
 
   // Formato que soporta el navegador: Chrome/Android/Firefox graban webm/opus; Safari/iOS, mp4 (aac).
   const mimeGrabacion = () => {
@@ -299,7 +350,23 @@ export default function Chat({ resumeId, onConfirmar, onSinSesion, onReclamo }) 
         )}
       </div>
 
-      <div className="chat">
+      <div
+        className={`chat${arrastrando ? " is-dragging" : ""}`}
+        onDragOver={(e) => {
+          if (![...(e.dataTransfer?.types || [])].includes("Files")) return;
+          e.preventDefault();
+          setArrastrando(true);
+        }}
+        onDragLeave={(e) => {
+          if (!e.currentTarget.contains(e.relatedTarget)) setArrastrando(false);
+        }}
+        onDrop={(e) => {
+          if (!e.dataTransfer?.files?.length) return;
+          e.preventDefault();
+          setArrastrando(false);
+          agregarArchivos(e.dataTransfer.files);
+        }}
+      >
         <div className="chat__msgs" ref={msgsBoxRef} aria-live="polite" data-fuse-container>
           <div className="bubble bubble--ia bubble--bienvenida">
             {BIENVENIDA}
@@ -316,14 +383,21 @@ export default function Chat({ resumeId, onConfirmar, onSinSesion, onReclamo }) 
                 {m.text}
                 <span className="bubble__meta bubble__meta--marca">Saldo a Favor · {m.time} · {m.por === "Grok" || m.por === "Qwen" ? m.por : "IA"}</span>
               </div>
-            ) : m.file ? (
+            ) : m.files?.length ? (
               <div className="bubble bubble--user" key={i} data-fuse="fade-up" data-fuse-auto>
-                {m.file.preview ? (
-                  <img className="bubble__img" src={m.file.preview} alt="Resumen adjunto" />
-                ) : (
-                  <span className="bubble__file"><Icon name="doc" size={16} /> {m.file.name}</span>
-                )}
-                <span className="bubble__meta">{m.file.isPdf ? "PDF" : "FOTO"} ENVIADO — {m.time}</span>
+                <div className={`bubble__adjuntos${m.files.length > 1 ? " bubble__adjuntos--varios" : ""}`}>
+                  {[...m.files].sort((x, y) => Boolean(y.preview) - Boolean(x.preview)).map((f, j) =>
+                    f.preview ? (
+                      <img className="bubble__img" key={j} src={f.preview} alt={`Adjunto: ${f.name}`} title={f.name} />
+                    ) : (
+                      <span className="bubble__file" key={j}><Icon name="doc" size={16} /> {f.name}</span>
+                    ),
+                  )}
+                </div>
+                {m.text ? <div className="bubble__texto">{m.text}</div> : null}
+                <span className="bubble__meta">
+                  {m.files.length > 1 ? `${m.files.length} ARCHIVOS ENVIADOS` : `${m.files[0].isPdf ? "PDF" : "FOTO"} ENVIADO`} — {m.time}
+                </span>
               </div>
             ) : (
               <div className={`bubble bubble--user${m.pendiente ? " is-pending" : ""}`} key={i} data-fuse="fade-up" data-fuse-auto>
@@ -360,6 +434,21 @@ export default function Chat({ resumeId, onConfirmar, onSinSesion, onReclamo }) 
           )}
         </div>
 
+        {(pendientes.length > 0 || leyendo) && (
+          <div className="adjuntos-pend" aria-label="Archivos para enviar">
+            {pendientes.map((a) => (
+              <div className="adjunto-chip" key={a.id} title={a.name}>
+                {a.preview ? <img src={previewSegura(a.preview) || ""} alt="" /> : <Icon name="doc" size={16} />}
+                <span className="adjunto-chip__nombre">{a.name}</span>
+                <button type="button" className="adjunto-chip__x" onClick={() => quitarPendiente(a.id)} aria-label={`Quitar ${a.name}`}>
+                  <Icon name="x" size={12} />
+                </button>
+              </div>
+            ))}
+            {leyendo && <span className="adjuntos-pend__leyendo">Preparando…</span>}
+            <span className="adjuntos-pend__cuenta">{pendientes.length}/{MAX_ARCHIVOS}</span>
+          </div>
+        )}
         <div
           className="chat__bar"
           onMouseDown={(e) => {
@@ -382,23 +471,25 @@ export default function Chat({ resumeId, onConfirmar, onSinSesion, onReclamo }) 
               <Icon name="x" size={17} />
             </button>
           ) : (
-          <label className="icon-btn" aria-label="Adjuntar resumen" title="Adjuntar foto o PDF" style={{ cursor: "pointer" }}>
+          <label className="icon-btn" aria-label="Adjuntar fotos o PDF" title={`Adjuntar fotos o PDF (hasta ${MAX_ARCHIVOS})`} style={{ cursor: "pointer" }}>
             <Icon name="paperclip" size={17} />
             <input
               type="file"
               accept="image/*,application/pdf"
+              multiple
+              data-testid="adjuntar"
               style={{ display: "none" }}
               onChange={(e) => {
-                const f = e.target.files?.[0];
+                const fs = Array.from(e.target.files || []);
                 e.target.value = "";
-                subirArchivo(f);
+                agregarArchivos(fs);
               }}
             />
           </label>
           )}
           <input
             className="chat__input"
-            placeholder={grabando ? `● Grabando ${Math.floor(seg / 60)}:${String(seg % 60).padStart(2, "0")} — tocá enviar` : "Escribí tu mensaje…"}
+            placeholder={grabando ? `● Grabando ${Math.floor(seg / 60)}:${String(seg % 60).padStart(2, "0")} — tocá enviar` : pendientes.length ? "Agregá un comentario (opcional)…" : "Escribí tu mensaje…"}
             value={input}
             maxLength={2000}
             enterKeyHint="send"

@@ -10,7 +10,7 @@ import { baja, casosEntidad, conversacion, demoVecino, editar, historial, listar
 import { seedDemo } from "./demo.js";
 import { getProvider } from "./ai/index.js";
 
-const MAX_BODY = 12 * 1024 * 1024;
+const MAX_BODY = 14.5 * 1024 * 1024; // por debajo del client_max_body_size 15m de nginx (varios adjuntos en base64)
 
 function send(res, status, data, headers = {}) {
   const body = JSON.stringify(data);

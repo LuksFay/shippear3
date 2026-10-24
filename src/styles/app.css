@@ -1820,3 +1820,18 @@ html { font-size: 106.25%; }
 .oficina-landing__texto { max-width: 62ch; margin: 0 0 var(--space-md); line-height: 1.55; }
 .oficina-landing__items { display: grid; gap: var(--space-md); grid-template-columns: repeat(auto-fit, minmax(220px, 1fr)); margin-bottom: var(--space-lg); }
 .oficina-landing__item { border-top: var(--rule-fine) solid var(--color-rule); padding-top: var(--space-sm); }
+
+/* Varios adjuntos por mensaje */
+.adjuntos-pend { display: flex; flex-wrap: wrap; align-items: center; gap: 6px; padding: 8px var(--space-md) 0; border-top: 1px solid var(--color-rule); background: var(--color-surface, transparent); }
+.adjunto-chip { display: inline-flex; align-items: center; gap: 6px; max-width: 180px; padding: 3px 4px 3px 3px; border: 1px solid var(--color-rule-2); background: var(--color-bg, #fff); font-size: var(--text-xs); }
+.adjunto-chip img { width: 34px; height: 34px; object-fit: cover; display: block; }
+.adjunto-chip__nombre { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; min-width: 0; }
+.adjunto-chip__x { display: inline-grid; place-items: center; width: 24px; height: 24px; flex: none; border: 0; background: transparent; color: inherit; cursor: pointer; }
+.adjunto-chip__x:hover { color: var(--color-alert); }
+.adjuntos-pend__cuenta, .adjuntos-pend__leyendo { font-size: var(--text-xs); color: var(--color-muted); }
+.adjuntos-pend__cuenta { margin-left: auto; }
+.bubble__adjuntos--varios { display: grid; grid-template-columns: repeat(auto-fill, minmax(84px, 1fr)); gap: 4px; margin-bottom: 4px; max-width: 280px; }
+.bubble__adjuntos--varios .bubble__img { width: 100%; height: 84px; object-fit: cover; margin: 0; }
+.bubble__adjuntos--varios .bubble__file { grid-column: 1 / -1; font-size: var(--text-sm); }
+.bubble__texto { margin-top: 4px; }
+.chat.is-dragging { outline: 2px dashed var(--color-accent); outline-offset: -6px; }

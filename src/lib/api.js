@@ -54,6 +54,25 @@ export function fileToDataUrl(file) {
   });
 }
 
+// Las fotos grandes (o en formatos que el servidor no acepta, como HEIC) se pasan a JPEG de hasta 2000 px.
+export function optimizarFoto(dataUrl, type, size) {
+  const aceptado = /^image\/(jpeg|png|webp|gif)$/i.test(type || "");
+  if (aceptado && size <= 1.5 * 1024 * 1024) return Promise.resolve(dataUrl);
+  return new Promise((resolve) => {
+    const img = new Image();
+    img.onload = () => {
+      const k = Math.min(1, 2000 / Math.max(img.width, img.height));
+      const c = document.createElement("canvas");
+      c.width = Math.round(img.width * k);
+      c.height = Math.round(img.height * k);
+      c.getContext("2d").drawImage(img, 0, 0, c.width, c.height);
+      resolve(c.toDataURL("image/jpeg", 0.85));
+    };
+    img.onerror = () => resolve(aceptado ? dataUrl : null);
+    img.src = dataUrl;
+  });
+}
+
 // Miniatura JPEG chica (máx. 320 px) para volver a mostrar la foto al recargar; el original no se guarda.
 export function miniatura(dataUrl, max = 320) {
   return new Promise((resolve) => {

@@ -11,6 +11,9 @@ import { destinoParaPrompt } from "./entidades.js";
 const MAX_HISTORY = 24;
 const MAX_TEXT = 2000;
 const MAX_FILE_BYTES = 8 * 1024 * 1024;
+export const MAX_FILES = 6; // adjuntos por mensaje
+const MAX_TOTAL_BYTES = 10 * 1024 * 1024; // suma de los archivos de un mensaje (entra en el límite de 15 MB de nginx en base64)
+const MAX_IMG_PARTS = 12; // imágenes que van al modelo en un turno (fotos + páginas de PDF escaneados)
 const IMG_RE = /^data:(image\/(png|jpe?g|webp|gif));base64,/i;
 const PDF_RE = /^data:application\/pdf;base64,/i;
 
@@ -73,7 +76,7 @@ async function logUse(userId, kind, provider, ok, usage, used) {
 }
 
 // Lee el adjunto del turno actual: partes para el modelo (texto/imagenes) + metadatos y texto extraído para guardar.
-async function readAttachment(attachment, provider) {
+async function readAttachment(attachment, provider, opts = {}) {
   const dataUrl = String(attachment.dataUrl);
   const approxBytes = Math.floor((dataUrl.length - dataUrl.indexOf(",") - 1) * 0.75);
   if (approxBytes > MAX_FILE_BYTES) throw new HttpError(413, "archivo_grande", "El archivo es muy grande (máx. 8 MB).");
@@ -93,10 +96,10 @@ async function readAttachment(attachment, provider) {
     // El PDF se lee en el servidor: texto si lo tiene; si es un escaneo, las primeras páginas como imágenes.
     let pdf;
     try {
-      pdf = await readPdf(Buffer.from(dataUrl.slice(dataUrl.indexOf(",") + 1), "base64"));
+      pdf = await readPdf(Buffer.from(dataUrl.slice(dataUrl.indexOf(",") + 1), "base64"), { maxImgPages: opts.maxImgPages });
     } catch (e) {
       console.error("[pdf]", e.message);
-      throw new HttpError(400, "pdf_invalido", "No pude abrir el PDF. Probá con una foto o captura del resumen.");
+      throw new HttpError(400, "pdf_invalido", `No pude abrir el PDF "${name}". Probá con una foto o captura del resumen.`);
     }
     const meta = { name, tipo: "pdf", bytes: approxBytes, pages: pdf.pages };
     if (pdf.text) {
@@ -116,9 +119,31 @@ async function readAttachment(attachment, provider) {
         ],
       };
     }
-    throw new HttpError(400, "pdf_vacio", "El PDF parece vacío. Probá con una foto o captura del resumen.");
+    throw new HttpError(400, "pdf_vacio", `El PDF "${name}" parece vacío. Probá con una foto o captura del resumen.`);
   }
-  throw new HttpError(400, "archivo_invalido", "Subí una foto (JPG, PNG) o un PDF.");
+  throw new HttpError(400, "archivo_invalido", "Subí fotos (JPG, PNG) o PDF.");
+}
+
+// Varios adjuntos en un mismo mensaje: se leen todos y van juntos al modelo en un solo turno.
+export async function readAttachments(list, provider) {
+  if (list.length > MAX_FILES) throw new HttpError(413, "muchos_archivos", `Podés mandar hasta ${MAX_FILES} archivos por mensaje.`);
+  const total = list.reduce((s, a) => s + Math.floor((String(a.dataUrl).length - String(a.dataUrl).indexOf(",") - 1) * 0.75), 0);
+  if (total > MAX_TOTAL_BYTES) throw new HttpError(413, "adjuntos_grandes", "Entre todos los archivos pesan demasiado (máx. 10 MB por mensaje). Mandalos en dos tandas.");
+  const maxImgPages = Math.max(1, Math.floor(MAX_IMG_PARTS / list.length));
+  const reads = [];
+  for (const a of list) reads.push(await readAttachment(a, provider, { maxImgPages }));
+  if (reads.length === 1) return reads[0];
+  const metas = reads.map((r) => r.meta);
+  const fotos = metas.filter((m) => m.tipo === "foto").length;
+  const pdfs = metas.length - fotos;
+  return {
+    meta: { ...metas[0], name: `${metas.length} archivos`, tipo: "varios", archivos: metas.map(({ preview, ...m }) => ({ ...m, preview })) },
+    contexto: reads.map((r, i) => (r.contexto ? `[${metas[i].name}]\n${r.contexto}` : "")).filter(Boolean).join("\n---\n").slice(0, 12_000),
+    parts: [
+      { type: "text", text: `[El vecino mandó ${metas.length} archivos juntos (${fotos} foto${fotos === 1 ? "" : "s"}, ${pdfs} PDF). Leelos todos y relacionalos entre sí.]` },
+      ...reads.flatMap((r) => r.parts),
+    ],
+  };
 }
 
 // Texto de un mensaje guardado para el modelo. Los adjuntos viejos van como lo que se extrajo de ellos.
@@ -127,7 +152,8 @@ function asContent(m, recortar) {
   if (m.kind === "audio") t = `(audio transcripto) ${t}`;
   if (m.adjunto) {
     const ctx = String(m.contexto || "").slice(0, recortar ? 1500 : 12_000);
-    const tipo = m.adjunto.tipo === "pdf" ? `PDF "${m.adjunto.name}"${m.adjunto.pages ? ` (${m.adjunto.pages} pág.)` : ""}` : `foto "${m.adjunto.name}"`;
+    const uno = (a) => (a.tipo === "pdf" ? `PDF "${a.name}"${a.pages ? ` (${a.pages} pág.)` : ""}` : `foto "${a.name}"`);
+    const tipo = Array.isArray(m.adjunto.archivos) ? `${m.adjunto.archivos.length} archivos: ${m.adjunto.archivos.map(uno).join(", ")}` : uno(m.adjunto);
     t = `${t ? t + "\n" : ""}[Adjunto anterior: ${tipo}. ${ctx ? `Contenido extraído: ${ctx}` : "Sin contenido extraído."}]`;
   }
   return t.slice(0, recortar ? 2500 : 14_000);
@@ -176,13 +202,15 @@ export async function chat(user, body) {
   // {messages:[{role,content}]}; se toma el último mensaje del vecino como el mensaje nuevo.
   const legado = !body?.text && Array.isArray(body?.messages) ? [...body.messages].reverse().find((m) => m?.role === "user") : null;
   const text = String(body?.text ?? (typeof legado?.content === "string" ? legado.content : "")).replace(/[\u0000-\u0008\u000B\u000C\u000E-\u001F\u007F]/g, "").trim().slice(0, MAX_TEXT);
-  const att = body?.attachment?.dataUrl ? body.attachment : null;
+  // Varios adjuntos (attachments: [...]); attachment suelto queda por compatibilidad con pestañas viejas.
+  const atts = (Array.isArray(body?.attachments) ? body.attachments : body?.attachment ? [body.attachment] : []).filter((a) => a && typeof a.dataUrl === "string" && a.dataUrl);
+  const att = atts.length ? atts : null;
   const reintentar = Boolean(body?.reintentar);
   // Sin mensaje del vecino no se llama a la IA (el saludo es fijo, lo muestra la app).
   if (!text && !att && !reintentar) throw new HttpError(400, "mensaje_vacio", "Escribí, grabá un audio o subí el resumen.");
   await checkQuota(user.id);
   const reclamo = await borradorParaChat(user.id, body?.reclamoId);
-  const read = att ? await readAttachment(att, provider) : null;
+  const read = att ? await readAttachments(att, provider) : null;
 
   let current = null;
   let userMsgId = null;
